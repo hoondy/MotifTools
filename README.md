@@ -1,18 +1,23 @@
 # MotifTools
-A collection of python tools to evaluate variant D-score (motif-breaking or motif-gaining power) on TF motif
+A collection of python tools to evaluate a variant D-score (motif-breaking or motif-gaining power) on TF motif
 
 ## Dependencies
 
-* Python 2.6 or higher (tested with Python 2.7.12)
+* Python 2.6 or higher (tested on Python 2.7.12)
 * BioPython 1.66 or higher
 * NumPy
-* BedTools 
+* BedTools
+* (optional) vcftools
+* (optional) HTSlib
 
 ## Config
 
 1. Make a copy of config.ini from config-sample.ini
 2. Specify path to bedtools
 3. Specify path to JASPAR database pfm file (i.e., JASPAR TF profiles, 2016 core non-redundant vertebrates, can be downloaded [here](http://jaspar.genereg.net/html/DOWNLOAD/JASPAR_CORE/pfm/nonredundant/pfm_vertebrates.txt))
+4. C_PRECISION tells how many digits to preserve when calculating P-value
+5. C_PSEUDOCOUNTS is added to PFM to avoid division by zero
+6. C_PVAL_THRESHOLD is P-value threshold for reporting TF motif significance on either reference or alternate genome. For example, suppose C_PVAL_THRESHOLD is 0.0001 and there is a variant that causes TF motif P-value to change from 0.001 to 0.1. Although it has D-score of 20, it does not get reported because neither TF motif on reference genome nor on alternate genome is significant. If a TF motif has P-value of 0.001 on reference genome and if a variant makes a TF motif to have P-value of 0.0001, it will be reported with D-score of -10.
 
 ## Inputs
 
@@ -62,7 +67,7 @@ chr2    95540114        95540133        chr2:95540115-95540133_+        8.230314
 * COLUMN 02: start position of motif
 * COLUMN 03: end position of motif
 * COLUMN 04: 1-based genomic coordinate ID
-* COLUMN 05: D score
+* COLUMN 05: D-score
 * COLUMN 06: strand
 * COLUMN 07: P-value on reference genome
 * COLUMN 08: P-value on alternate genome
@@ -80,5 +85,11 @@ D-score = [-10 * log(P-val_Ref)] - [-10 * log(P-val_Alt)]
 D-score = -10 * log(P-val_Ref/P-val_Alt)
 ```
 
-Positive D-score denotes a variant is decreasing the likelihood of TF to bind the motif (motif-break)
-Negative D-score denotes a variant is increasing the likelihood of TF to bind the motif (motif-gain)
+* *Positive D-score denotes a variant is decreasing the likelihood of TF to bind the motif (motif-break)*
+* *Negative D-score denotes a variant is increasing the likelihood of TF to bind the motif (motif-gain)*
+
+
+## Future Improvements
+
+* Current version has been optimized for calculating D-score with equal nucleotide background (A:C:G:T=1:1:1:1). While changing the proportion of nucleotide background is supported in current version, it can be slow and precision maybe lost. Our internal test has indicated that changing the proportion of nucleotide background has very minimal impact on P-value. The future version should address this issue.
+* Motif logo of BEFORE and AFTER
