@@ -1,6 +1,8 @@
 # MotifTools
 A collection of python tools to evaluate a variant D-score (motif-breaking or motif-gaining power) on TF motif
 
+![MotifTools](https://docs.google.com/a/yale.edu/uc?authuser=1&id=0B1hrcjjDSLuXamFwakx1SHpuc28&export=download)
+
 ## Dependencies
 
 * Python 2.6 or higher (tested on Python 2.7.12)
