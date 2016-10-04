@@ -15,7 +15,6 @@ import math, collections, ConfigParser, glob, re
 import numpy as np
 from os import listdir
 from os.path import isfile, join
-# from subprocess import check_output
 # from fractions import gcd
 
 ### LOAD CONFIG ###
@@ -220,6 +219,18 @@ def pval2score(pval, score_distribution):
             # print float(cumsum) / float(math.pow(4,len(score_distribution)))
             return idx
 
+def getWeblogo(m):
+
+    tfName = str(m.name).upper()
+    tfID = m.matrix_id
+    pctGC = str(C_BACKGROUND_C+C_BACKGROUND_G)
+
+    m.weblogo(fname='weblogo_'+tfName+'.png', format='PNG', stack_width='large', logo_title=tfName, logo_label=tfID, percentCG=pctGC)
+
+    # unit_name='bits'
+    # unit_name='probability'
+    # the height of the y-axis is the maximum entropy for the given sequence type. (log2 4 = 2 bits for DNA/RNA, log2 20 = 4.3 bits for protein.)
+
 def dscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
 
     ##############################
@@ -243,6 +254,7 @@ def dscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
     print "PWM:"
     print pwm
 
+    ### scale PWM to non-negative integer
     scaled_pwm = pwm2scaled_pwm(m, pwm)
 
     print "Scaled PWM:"
@@ -372,7 +384,7 @@ def dscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
                             # print dscore_neg
                             output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m)+1)+"\t"+ucsc_coord+"_-\t"+str(dscore_neg)+"\t-\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\t"+str(subseq_ref_neg_print)+"\t"+str(subseq_alt_neg_print)+"\t"+str(ref_rawscore_neg)+"\t"+str(alt_rawscore_neg)+"\t"+str(motif_varpos_neg)+"\n")
 
-def bscoreAnalysis(tfName, fastaFile, pvalThreshold, outFile):
+def bscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
 
     ##############################
     ### 1. PROCESS TF MOTIF
@@ -395,6 +407,10 @@ def bscoreAnalysis(tfName, fastaFile, pvalThreshold, outFile):
     print "PWM:"
     print pwm
 
+    ### weblogo
+    getWeblogo(m)
+
+    ### scale PWM to non-negative integer
     scaled_pwm = pwm2scaled_pwm(m, pwm)
 
     print "Scaled PWM:"
@@ -418,49 +434,117 @@ def bscoreAnalysis(tfName, fastaFile, pvalThreshold, outFile):
 
     print "Processing",len(peak_seq),"peaks from REF genome"
 
-    # with open(outFile, 'w') as output:
-    #     for skey in ref_seq.keys():
-    #
-    #         ### SLIDE WINDOW
-    #         for pos in range(0,len(ref_seq[skey])-len(m)+1):
-    #
-    #             chr = skey.split(":")[0]
-    #             pos_start = int(skey.split(":")[1].split("-")[0]) + pos + 1 ### convert 0-based to 1-based
-    #             pos_end = int(skey.split(":")[1].split("-")[0]) + pos + len(m)
-    #             ucsc_coord = chr+":"+str(pos_start)+"-"+str(pos_end)
-    #
-    #             ref_subseq_pos = ref_seq[skey][pos:pos+len(m)]
-    #             ref_subseq_neg = ref_seq[skey][pos:pos+len(m)].reverse_complement()
-    #
-    #
-    #             ### FORWARD STRAND ###
-    #
-    #             ref_score_pos = int(seq2score(ref_subseq_pos,scaled_pwm))
-    #
-    #             if ref_score_pos > score_threshold:
-    #                 ref_pval_pos = score2pval(ref_score_pos, score_distribution)
-    #
-    #                 # dscore_pos = -10 * math.log10(ref_pval_pos/alt_pval_pos)
-    #                 ref_rawscore_pos = seq2score(ref_subseq_pos,pwm)
-    #
-    #                 print ref_subseq_pos, ref_pval_pos
-    #                 # if abs(dscore_pos) > 0:
-    #                 #     # print dscore_pos
-    #                 #     output.write(chr+"\t"+str(pos_start-1)+"\t"+str(pos_end)+"\t"+ucsc_coord+"_+\t"+str(dscore_pos)+"\t+\t"+str(ref_pval_pos)+"\t"+str(alt_pval_pos)+"\t"+str(ref_subseq_pos)+"\t"+str(alt_subseq_pos)+"\t"+str(ref_rawscore_pos)+"\t"+str(alt_rawscore_pos)+"\n")
-    #
-    #             ### REVERSE STRAND ###
-    #
-    #             ref_score_neg = int(seq2score(ref_subseq_neg,scaled_pwm))
-    #             # alt_score_neg = int(seq2score(alt_subseq_neg,scaled_pwm))
-    #
-    #             if ref_score_neg > score_threshold:
-    #                 ref_pval_neg = score2pval(ref_score_neg, score_distribution)
-    #                 # alt_pval_neg = score2pval(alt_score_neg, score_distribution)
-    #
-    #                 # dscore_neg = -10 * math.log10(ref_pval_neg/alt_pval_neg)
-    #                 ref_rawscore_neg = seq2score(ref_subseq_neg,pwm)
-    #                 # alt_rawscore_neg = seq2score(alt_subseq_neg,pwm)
-    #                 # if abs(dscore_neg) > 0:
-    #                 #     # print dscore_neg
-    #                 #     output.write(chr+"\t"+str(pos_start)+"\t"+str(pos_end+1)+"\t"+ucsc_coord+"_-\t"+str(dscore_neg)+"\t-\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\t"+str(ref_subseq_neg)+"\t"+str(alt_subseq_neg)+"\t"+str(ref_rawscore_neg)+"\t"+str(alt_rawscore_neg)+"\n")
-    # # break
+    ##############################
+    ### 3. PROCESS BED
+    ##############################
+
+    with open(outFile, 'w') as output:
+        with open(bedFile, 'r') as input:
+
+            count = np.zeros((len(m)), dtype=np.int)
+
+            for line in input.readlines():
+                line_split = line.rstrip().split("\t")
+                # print line_split
+
+                # sequence info
+                seq_chr = line_split[0]
+                seq_start = int(line_split[1])
+                seq_end = int(line_split[2])
+                skey = seq_chr+":"+str(seq_start)+"-"+str(seq_end) # 0-based
+                # print skey
+                seq = peak_seq[skey]
+                # print seq
+
+                # variant info
+                var_chr = line_split[10]
+                var_pos = int(line_split[11])-1 # 1-based pos to 0-based pos
+                var_ref = line_split[13]
+                var_alt = line_split[14]
+                # print var_chr,var_pos,var_ref,var_alt
+
+                # seq before variant
+                seq_prefix = seq[:var_pos-seq_start]
+                # seq after variant
+                seq_postfix = seq[var_pos+1-seq_start:]
+
+                left = max(var_pos+1-len(m),var_pos+1-len(seq_prefix))
+                right = min(var_pos+len(m),var_pos+len(seq_postfix))
+                # print left,right
+
+                for subseq_start in range(left,right+1-len(m)):
+
+                    ucsc_coord = seq_chr+":"+str(subseq_start+1)+"-"+str(subseq_start+len(m)) # 0-based to 1-based
+                    # print ucsc_coord
+
+                    # var pos wrt to motif
+                    motif_varpos_pos = var_pos-subseq_start+1 # 1-based variant position wrt motif
+                    motif_varpos_neg = len(m)-var_pos+subseq_start # 1-based variant position wrt motif
+                    # print "var pos wrt TF motif (+):",motif_varpos_pos
+                    # print "var pos wrt TF motif (-):",motif_varpos_neg
+
+                    subseq_prefix = seq[subseq_start-seq_start:var_pos-seq_start]
+                    subseq_var = seq[var_pos-seq_start]
+                    subseq_postfix = seq[var_pos-seq_start+1:subseq_start-seq_start+len(m)]
+
+                    if subseq_var.upper() != var_ref.upper():
+                        print "WARNING! Reference sequence mismatch:",subseq_var,var_ref,var_pos
+                        return None
+
+                    subseq_ref_pos = subseq_prefix+var_ref.upper()+subseq_postfix
+                    subseq_alt_pos = subseq_prefix+var_alt.upper()+subseq_postfix
+
+                    subseq_pos_print = subseq_prefix+"["+var_ref.upper()+"/"+var_alt.upper()+"]"+subseq_postfix
+
+                    # print subseq_ref_pos, subseq_alt_pos
+                    # print subseq_ref_pos_print, subseq_alt_pos_print
+
+                    subseq_ref_neg = subseq_ref_pos.reverse_complement()
+                    subseq_alt_neg = subseq_alt_pos.reverse_complement()
+
+                    subseq_neg_print = subseq_postfix.reverse_complement()+"["+Seq(var_ref.upper(),generic_dna).reverse_complement()+"/"+Seq(var_alt.upper(),generic_dna).reverse_complement()+"]"+subseq_prefix.reverse_complement()
+
+                    # print subseq_ref_neg, subseq_alt_neg
+                    # print subseq_ref_neg_print, subseq_alt_neg_print
+
+                    ### calc motif score ###
+
+                    ### FORWARD STRAND ###
+
+                    ref_score_pos = int(seq2score(subseq_ref_pos,scaled_pwm))
+                    alt_score_pos = int(seq2score(subseq_alt_pos,scaled_pwm))
+
+                    if ref_score_pos > score_threshold or alt_score_pos > score_threshold:
+
+                        ref_pval_pos = score2pval(ref_score_pos, score_distribution)
+                        alt_pval_pos = score2pval(alt_score_pos, score_distribution)
+
+                        # count relative position
+                        count[motif_varpos_pos-1]+=1
+
+                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+ucsc_coord+"_+\t"+str(motif_varpos_pos)+"\t+\t"+str(subseq_pos_print)+"\t"+str(ref_pval_pos)+"\t"+str(alt_pval_pos)+"\n")
+
+                    ### REVERSE STRAND ###
+
+                    ref_score_neg = int(seq2score(subseq_ref_neg,scaled_pwm))
+                    alt_score_neg = int(seq2score(subseq_alt_neg,scaled_pwm))
+
+                    if ref_score_neg > score_threshold or alt_score_neg > score_threshold:
+
+                        ref_pval_neg = score2pval(ref_score_neg, score_distribution)
+                        alt_pval_neg = score2pval(alt_score_neg, score_distribution)
+
+                        # count relative position
+                        count[motif_varpos_neg-1]+=1
+
+                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m)+1)+"\t"+ucsc_coord+"_-\t"+str(motif_varpos_neg)+"\t-\t"+str(subseq_neg_print)+"\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\n")
+
+            print ""
+            print "### SUMMARY ###"
+            print "TOTAL:", sum(count)
+            print ""
+            print "POS\tCOUNT"
+            for idx, val in enumerate(count):
+                print str(idx+1)+"\t"+str(val)
+
+
