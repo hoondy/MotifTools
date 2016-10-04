@@ -1,5 +1,7 @@
 # MotifTools
-A collection of python tools to evaluate a variant D-score (motif-breaking or motif-gaining power) on TF motif
+A collection of python tools to evaluate a variant on TF motif
+* D-score: motif-breaking or motif-gaining power
+* B-score: burden score
 
 ![MotifTools](https://docs.google.com/a/yale.edu/uc?authuser=1&id=0B1hrcjjDSLuXamFwakx1SHpuc28&export=download)
 
@@ -30,17 +32,19 @@ A collection of python tools to evaluate a variant D-score (motif-breaking or mo
 
 ```shell
 python runDscore.py --sample {"MCF-7"} --tf {"CTCF"} --bed {peak.bed} --vcf {variant.vcf} --ref {reference_genome.fa}
+python runBscore.py --sample {"MCF-7"} --tf {"CTCF"} --bed {peak.bed} --vcf {variant.vcf} --ref {reference_genome.fa}
 ```
 
 or
 
 ```shell
 python runDscore.py -s {"MCF-7"} -t {"CTCF"} -b {peak.bed} -v {variant.vcf} -r {reference_genome.fa}
+python runBscore.py -s {"MCF-7"} -t {"CTCF"} -b {peak.bed} -v {variant.vcf} -r {reference_genome.fa}
 ```
 
 ## Output
 
-Output is saved in BED format (i.e., genomic coordinate is 0-based).
+D-score output is saved in BED format (i.e., genomic coordinate is 0-based).
 
 ```
 chr1	205304887	205304906	chr1:205304888-205304906_+	12.5378302556	+	3.20285835187e-06	5.74540645175e-05	TCCTCA[C]TAGGGGGCAGCA	TCCTCA[T]TAGGGGGCAGCA	15.122657723	9.53769650652	7
