@@ -382,7 +382,7 @@ def dscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
                         alt_rawscore_neg = seq2score(subseq_alt_neg,pwm)
                         if abs(dscore_neg) > 0:
                             # print dscore_neg
-                            output.write(seq_chr+"\t"+str(subseq_start+1)+"\t"+str(subseq_start+len(m)+1)+"\t"+ucsc_coord+"_-\t"+str(dscore_neg)+"\t-\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\t"+str(subseq_ref_neg_print)+"\t"+str(subseq_alt_neg_print)+"\t"+str(ref_rawscore_neg)+"\t"+str(alt_rawscore_neg)+"\t"+str(motif_varpos_neg)+"\n")
+                            output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+ucsc_coord+"_-\t"+str(dscore_neg)+"\t-\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\t"+str(subseq_ref_neg_print)+"\t"+str(subseq_alt_neg_print)+"\t"+str(ref_rawscore_neg)+"\t"+str(alt_rawscore_neg)+"\t"+str(motif_varpos_neg)+"\n")
 
 def bscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
 
@@ -537,7 +537,7 @@ def bscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
                         # count relative position
                         count[motif_varpos_neg-1]+=1
 
-                        output.write(seq_chr+"\t"+str(subseq_start+1)+"\t"+str(subseq_start+len(m)+1)+"\t"+ucsc_coord+"_-\t"+str(motif_varpos_neg)+"\t-\t"+str(subseq_neg_print)+"\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\n")
+                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+ucsc_coord+"_-\t"+str(motif_varpos_neg)+"\t-\t"+str(subseq_neg_print)+"\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\n")
 
             print ""
             print "### SUMMARY ###"
