@@ -10,7 +10,7 @@ __email__ = "donghoon.lee@yale.edu"
 
 from Bio import motifs, SeqIO
 from Bio.Seq import Seq
-from Bio.Alphabet import IUPAC, generic_dna
+from Bio.Alphabet import IUPAC
 import math, collections, ConfigParser, glob, re
 import numpy as np
 from os import listdir
@@ -272,7 +272,7 @@ def dscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
     ### LOAD FASTA SEQ
     peak_seq = collections.OrderedDict()
 
-    for seq_item in SeqIO.parse(fastaFile,"fasta",alphabet=generic_dna):
+    for seq_item in SeqIO.parse(fastaFile,"fasta",alphabet=IUPAC.unambiguous_dna):
         peak_seq[seq_item.id]=seq_item.seq
         # print seq_item.id
 
@@ -344,8 +344,8 @@ def dscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
                     subseq_ref_neg = subseq_ref_pos.reverse_complement()
                     subseq_alt_neg = subseq_alt_pos.reverse_complement()
 
-                    subseq_ref_neg_print = subseq_postfix.reverse_complement()+"["+Seq(var_ref.upper(),generic_dna).reverse_complement()+"]"+subseq_prefix.reverse_complement()
-                    subseq_alt_neg_print = subseq_postfix.reverse_complement()+"["+Seq(var_alt.upper(),generic_dna).reverse_complement()+"]"+subseq_prefix.reverse_complement()
+                    subseq_ref_neg_print = subseq_postfix.reverse_complement()+"["+Seq(var_ref.upper(),IUPAC.unambiguous_dna).reverse_complement()+"]"+subseq_prefix.reverse_complement()
+                    subseq_alt_neg_print = subseq_postfix.reverse_complement()+"["+Seq(var_alt.upper(),IUPAC.unambiguous_dna).reverse_complement()+"]"+subseq_prefix.reverse_complement()
 
                     # print subseq_ref_neg, subseq_alt_neg
                     # print subseq_ref_neg_print, subseq_alt_neg_print
@@ -382,7 +382,7 @@ def dscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
                         alt_rawscore_neg = seq2score(subseq_alt_neg,pwm)
                         if abs(dscore_neg) > 0:
                             # print dscore_neg
-                            output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m)+1)+"\t"+ucsc_coord+"_-\t"+str(dscore_neg)+"\t-\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\t"+str(subseq_ref_neg_print)+"\t"+str(subseq_alt_neg_print)+"\t"+str(ref_rawscore_neg)+"\t"+str(alt_rawscore_neg)+"\t"+str(motif_varpos_neg)+"\n")
+                            output.write(seq_chr+"\t"+str(subseq_start+1)+"\t"+str(subseq_start+len(m)+1)+"\t"+ucsc_coord+"_-\t"+str(dscore_neg)+"\t-\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\t"+str(subseq_ref_neg_print)+"\t"+str(subseq_alt_neg_print)+"\t"+str(ref_rawscore_neg)+"\t"+str(alt_rawscore_neg)+"\t"+str(motif_varpos_neg)+"\n")
 
 def bscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
 
@@ -428,7 +428,7 @@ def bscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
     ### LOAD FASTA SEQ
     peak_seq = collections.OrderedDict()
 
-    for seq_item in SeqIO.parse(fastaFile,"fasta",alphabet=generic_dna):
+    for seq_item in SeqIO.parse(fastaFile,"fasta",alphabet=IUPAC.unambiguous_dna):
         peak_seq[seq_item.id]=seq_item.seq
         # print seq_item.id
 
@@ -502,7 +502,7 @@ def bscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
                     subseq_ref_neg = subseq_ref_pos.reverse_complement()
                     subseq_alt_neg = subseq_alt_pos.reverse_complement()
 
-                    subseq_neg_print = subseq_postfix.reverse_complement()+"["+Seq(var_ref.upper(),generic_dna).reverse_complement()+"/"+Seq(var_alt.upper(),generic_dna).reverse_complement()+"]"+subseq_prefix.reverse_complement()
+                    subseq_neg_print = subseq_postfix.reverse_complement()+"["+Seq(var_ref.upper(),IUPAC.unambiguous_dna).reverse_complement()+"/"+Seq(var_alt.upper(),IUPAC.unambiguous_dna).reverse_complement()+"]"+subseq_prefix.reverse_complement()
 
                     # print subseq_ref_neg, subseq_alt_neg
                     # print subseq_ref_neg_print, subseq_alt_neg_print
@@ -537,7 +537,7 @@ def bscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
                         # count relative position
                         count[motif_varpos_neg-1]+=1
 
-                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m)+1)+"\t"+ucsc_coord+"_-\t"+str(motif_varpos_neg)+"\t-\t"+str(subseq_neg_print)+"\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\n")
+                        output.write(seq_chr+"\t"+str(subseq_start+1)+"\t"+str(subseq_start+len(m)+1)+"\t"+ucsc_coord+"_-\t"+str(motif_varpos_neg)+"\t-\t"+str(subseq_neg_print)+"\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\n")
 
             print ""
             print "### SUMMARY ###"
