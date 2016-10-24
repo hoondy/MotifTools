@@ -17,19 +17,14 @@ Config.read("config.ini")
 
 ### LOAD ARGs ###
 
-parser = argparse.ArgumentParser(description='Calculate TFBS D-score')
+parser = argparse.ArgumentParser(description='Call TF Motif')
 parser.add_argument('-s','--sample', help='Sample Name',required=True)
 parser.add_argument('-t','--tf', help='TF Name',required=True)
 parser.add_argument('-b','--bed', help='Peak BED File',required=True)
-parser.add_argument('-v','--vcf', help='Variant VCF File',required=True)
 parser.add_argument('-r','--ref', help='REF Genome FASTA File',required=True)
 args = parser.parse_args()
 
 ###
-
-def getPeakWithVariant(bedFile, vcfFile, outFile):
-    subprocess.call(Config.get("app","bedtools")+" intersect -a "+bedFile+" -b "+vcfFile+" -wa -wb > "+outFile, shell=True)
-    return outFile
 
 def getFasta(fastaFile, bedFile, outFile):
     subprocess.call(Config.get("app","bedtools")+" getfasta -fi "+fastaFile+" -bed "+bedFile+" -fo "+outFile, shell=True)
@@ -56,24 +51,19 @@ def main():
 
     print "JASPAR motif ID:",m.matrix_id
 
-    # intersect peak with variants
-    print "Intersect peak with variants"
-    getPeakWithVariant(args.bed, args.vcf, "tf_peak_"+sample+"_"+tf+".bed")
-    print "DONE"
-
     # getfasta
     print "Get FASTA"
-    getFasta(args.ref, "tf_peak_"+sample+"_"+tf+".bed", "tf_peak_"+sample+"_"+tf+".fa")
+    getFasta(args.ref, args.bed, "tf_peak_"+sample+"_"+tf+".fa")
     print "DONE"
 
-    # calculate D-score
-    print "Calculate D-score"
-    procMotif.dscoreAnalysis(tf, "tf_peak_"+sample+"_"+tf+".fa", "tf_peak_"+sample+"_"+tf+".bed", float(Config.get("param","C_PVAL_THRESHOLD")), "dscore_"+sample+"_"+tf+".bed")
+    # call TF motif
+    print "Call TF motif"
+    procMotif.callMotif(tf, "tf_peak_"+sample+"_"+tf+".fa", "tf_peak_"+sample+"_"+tf+".bed", float(Config.get("param","C_PVAL_THRESHOLD")), "tf_motif_"+sample+"_"+tf+".bed")
     print "DONE"
 
     # sort & uniq
     print "sort & uniq"
-    sortUniq("dscore_"+sample+"_"+tf+".bed","dscore_"+sample+"_"+tf+"_uniq.bed")
+    sortUniq("tf_motif_"+sample+"_"+tf+".bed","tf_motif_"+sample+"_"+tf+"_uniq.bed")
     print "DONE"
 
 main()

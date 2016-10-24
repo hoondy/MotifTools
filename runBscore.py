@@ -17,7 +17,7 @@ Config.read("config.ini")
 
 ### LOAD ARGs ###
 
-parser = argparse.ArgumentParser(description='Calculate TFBS D-score')
+parser = argparse.ArgumentParser(description='Calculate TFBS B-score')
 parser.add_argument('-s','--sample', help='Sample Name',required=True)
 parser.add_argument('-t','--tf', help='TF Name',required=True)
 parser.add_argument('-b','--bed', help='Peak BED File',required=True)
@@ -33,6 +33,10 @@ def getPeakWithVariant(bedFile, vcfFile, outFile):
 
 def getFasta(fastaFile, bedFile, outFile):
     subprocess.call(Config.get("app","bedtools")+" getfasta -fi "+fastaFile+" -bed "+bedFile+" -fo "+outFile, shell=True)
+    return outFile
+
+def sortUniq(inFile, outFile):
+    subprocess.call("sort -k1,1 -k2,2n "+inFile+" | uniq > "+outFile, shell=True)
     return outFile
 
 def main():
@@ -65,6 +69,11 @@ def main():
     # calculate B-score
     print "Calculate B-score"
     procMotif.bscoreAnalysis(tf, "tf_peak_"+sample+"_"+tf+".fa", "tf_peak_"+sample+"_"+tf+".bed", float(Config.get("param","C_PVAL_THRESHOLD")), "bscore_"+sample+"_"+tf+".bed")
+    print "DONE"
+
+    # sort & uniq
+    print "sort & uniq"
+    sortUniq("bscore_"+sample+"_"+tf+".bed","bscore_"+sample+"_"+tf+"_uniq.bed")
     print "DONE"
 
 main()

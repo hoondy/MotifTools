@@ -438,10 +438,10 @@ def bscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
     ### 3. PROCESS BED
     ##############################
 
+    count = np.zeros((len(m)), dtype=np.int)
+
     with open(outFile, 'w') as output:
         with open(bedFile, 'r') as input:
-
-            count = np.zeros((len(m)), dtype=np.int)
 
             for line in input.readlines():
                 line_split = line.rstrip().split("\t")
@@ -539,12 +539,105 @@ def bscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
 
                         output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+ucsc_coord+"_-\t"+str(motif_varpos_neg)+"\t-\t"+str(subseq_neg_print)+"\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\n")
 
-            print ""
-            print "### SUMMARY ###"
-            print "TOTAL:", sum(count)
-            print ""
-            print "POS\tCOUNT"
-            for idx, val in enumerate(count):
-                print str(idx+1)+"\t"+str(val)
+    print "DONE"
+    print ""
+    print "### SUMMARY ###"
+    print "TOTAL:", sum(count)
+    print ""
+    print "POS\tCOUNT"
+    for idx, val in enumerate(count):
+        print str(idx+1)+"\t"+str(val)
 
+def callMotif(tfName, fastaFile, bedFile, pvalThreshold, outFile):
 
+    ##############################
+    ### 1. PROCESS TF MOTIF
+    ##############################
+
+    ### get JASPAR TF motif
+    m = get_jaspar_motif(tfName)
+
+    # stop if not found
+    if not m:
+        return None
+
+    ppm = m.counts.normalize(pseudocounts=C_PSEUDOCOUNTS)
+    pwm = ppm.log_odds(background=C_BACKGROUND)
+
+    print "PFM:"
+    print m.counts
+    print "PPM:"
+    print ppm
+    print "PWM:"
+    print pwm
+
+    ### weblogo
+    getWeblogo(m)
+
+    ### scale PWM to non-negative integer
+    scaled_pwm = pwm2scaled_pwm(m, pwm)
+
+    print "Scaled PWM:"
+    print scaled_pwm
+
+    score_distribution = scaled_pwm2scoredist(m, scaled_pwm)
+
+    ### score threshold: discard motif with score smaller than this
+    score_threshold = pval2score(pvalThreshold, score_distribution)
+
+    ##############################
+    ### 2. PROCESS FASTA SEQ
+    ##############################
+
+    ### LOAD FASTA SEQ
+    peak_seq = collections.OrderedDict()
+
+    for seq_item in SeqIO.parse(fastaFile,"fasta",alphabet=IUPAC.unambiguous_dna):
+        peak_seq[seq_item.id]=seq_item.seq
+        # print seq_item.id
+
+    print "Processing",len(peak_seq),"peaks from REF genome"
+
+    ##############################
+    ### 3. PROCESS BED
+    ##############################
+
+    with open(outFile, 'w') as output:
+        with open(bedFile, 'r') as input:
+
+            for line in input.readlines():
+                line_split = line.rstrip().split("\t")
+                # print line_split
+
+                # sequence info
+                seq_chr = line_split[0]
+                seq_start = int(line_split[1])
+                seq_end = int(line_split[2])
+                skey = seq_chr+":"+str(seq_start)+"-"+str(seq_end) # 0-based
+                # print skey
+                seq = peak_seq[skey]
+                # print seq
+
+                for subseq_start in range(seq_start,seq_end+1-len(m)):
+
+                    ucsc_coord = seq_chr+":"+str(subseq_start+1)+"-"+str(subseq_start+len(m)) # 0-based to 1-based
+                    # print ucsc_coord
+
+                    subseq = seq[subseq_start-seq_start:subseq_start-seq_start+len(m)]
+
+                    subseq_ref_pos = subseq
+                    subseq_ref_neg = subseq_ref_pos.reverse_complement()
+
+                    ### call motif ###
+
+                    ### FORWARD STRAND ###
+                    ref_score_pos = int(seq2score(subseq_ref_pos,scaled_pwm))
+                    if ref_score_pos > score_threshold:
+                        ref_pval_pos = score2pval(ref_score_pos, score_distribution)
+                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+ucsc_coord+"_+\t"+str(ref_pval_pos)+"\t+\t"+str(subseq_ref_pos).upper()+"\n")
+
+                    ### REVERSE STRAND ###
+                    ref_score_neg = int(seq2score(subseq_ref_neg,scaled_pwm))
+                    if ref_score_neg > score_threshold:
+                        ref_pval_neg = score2pval(ref_score_neg, score_distribution)
+                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+ucsc_coord+"_-\t"+str(ref_pval_neg)+"\t-\t"+str(subseq_ref_neg).upper()+"\n")
