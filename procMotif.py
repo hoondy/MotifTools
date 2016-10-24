@@ -615,7 +615,10 @@ def callMotif(tfName, fastaFile, bedFile, pvalThreshold, outFile):
                 seq_end = int(line_split[2])
                 skey = seq_chr+":"+str(seq_start)+"-"+str(seq_end) # 0-based
                 # print skey
-                seq = peak_seq[skey]
+                if skey in peak_seq:
+                    seq = peak_seq[skey]
+                else:
+                    continue # handle out of bound seq range: Feature (chrM:16236-16616) beyond the length of chrM size (16571 bp).  Skipping.
                 # print seq
 
                 for subseq_start in range(seq_start,seq_end+1-len(m)):
