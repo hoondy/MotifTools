@@ -625,6 +625,9 @@ def callMotif(tfName, fastaFile, bedFile, pvalThreshold, outFile):
 
                     subseq = seq[subseq_start-seq_start:subseq_start-seq_start+len(m)]
 
+                    if "N" in subseq.upper():
+                        continue
+
                     subseq_ref_pos = subseq
                     subseq_ref_neg = subseq_ref_pos.reverse_complement()
 
