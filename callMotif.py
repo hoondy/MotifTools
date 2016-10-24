@@ -58,7 +58,7 @@ def main():
 
     # call TF motif
     print "Call TF motif"
-    procMotif.callMotif(tf, "tf_peak_"+sample+"_"+tf+".fa", "tf_peak_"+sample+"_"+tf+".bed", float(Config.get("param","C_PVAL_THRESHOLD")), "tf_motif_"+sample+"_"+tf+".bed")
+    procMotif.callMotif(tf, "tf_peak_"+sample+"_"+tf+".fa", float(Config.get("param","C_PVAL_THRESHOLD")), "tf_motif_"+sample+"_"+tf+".bed")
     print "DONE"
 
     # sort & uniq
