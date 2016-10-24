@@ -548,7 +548,7 @@ def bscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
     for idx, val in enumerate(count):
         print str(idx+1)+"\t"+str(val)
 
-def callMotif(tfName, fastaFile, pvalThreshold, outFile):
+def callMotif(tfName, fastaFile, bedFile, pvalThreshold, outFile):
 
     ##############################
     ### 1. PROCESS TF MOTIF
@@ -603,40 +603,41 @@ def callMotif(tfName, fastaFile, pvalThreshold, outFile):
     ##############################
 
     with open(outFile, 'w') as output:
+        with open(bedFile, 'r') as input:
 
-        for line in input.readlines():
-            line_split = line.rstrip().split("\t")
-            # print line_split
+            for line in input.readlines():
+                line_split = line.rstrip().split("\t")
+                # print line_split
 
-            # sequence info
-            seq_chr = line_split[0]
-            seq_start = int(line_split[1])
-            seq_end = int(line_split[2])
-            skey = seq_chr+":"+str(seq_start)+"-"+str(seq_end) # 0-based
-            # print skey
-            seq = peak_seq[skey]
-            # print seq
+                # sequence info
+                seq_chr = line_split[0]
+                seq_start = int(line_split[1])
+                seq_end = int(line_split[2])
+                skey = seq_chr+":"+str(seq_start)+"-"+str(seq_end) # 0-based
+                # print skey
+                seq = peak_seq[skey]
+                # print seq
 
-            for subseq_start in range(seq_start,seq_end+1-len(m)):
+                for subseq_start in range(seq_start,seq_end+1-len(m)):
 
-                ucsc_coord = seq_chr+":"+str(subseq_start+1)+"-"+str(subseq_start+len(m)) # 0-based to 1-based
-                # print ucsc_coord
+                    ucsc_coord = seq_chr+":"+str(subseq_start+1)+"-"+str(subseq_start+len(m)) # 0-based to 1-based
+                    # print ucsc_coord
 
-                subseq = seq[subseq_start-seq_start:subseq_start-seq_start+len(m)]
+                    subseq = seq[subseq_start-seq_start:subseq_start-seq_start+len(m)]
 
-                subseq_ref_pos = subseq
-                subseq_ref_neg = subseq_ref_pos.reverse_complement()
+                    subseq_ref_pos = subseq
+                    subseq_ref_neg = subseq_ref_pos.reverse_complement()
 
-                ### call motif ###
+                    ### call motif ###
 
-                ### FORWARD STRAND ###
-                ref_score_pos = int(seq2score(subseq_ref_pos,scaled_pwm))
-                if ref_score_pos > score_threshold:
-                    ref_pval_pos = score2pval(ref_score_pos, score_distribution)
-                    output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+ucsc_coord+"_+\t"+str(ref_pval_pos)+"\t+\t"+str(subseq_ref_pos).upper()+"\n")
+                    ### FORWARD STRAND ###
+                    ref_score_pos = int(seq2score(subseq_ref_pos,scaled_pwm))
+                    if ref_score_pos > score_threshold:
+                        ref_pval_pos = score2pval(ref_score_pos, score_distribution)
+                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+ucsc_coord+"_+\t"+str(ref_pval_pos)+"\t+\t"+str(subseq_ref_pos).upper()+"\n")
 
-                ### REVERSE STRAND ###
-                ref_score_neg = int(seq2score(subseq_ref_neg,scaled_pwm))
-                if ref_score_neg > score_threshold:
-                    ref_pval_neg = score2pval(ref_score_neg, score_distribution)
-                    output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+ucsc_coord+"_-\t"+str(ref_pval_neg)+"\t-\t"+str(subseq_ref_neg).upper()+"\n")
+                    ### REVERSE STRAND ###
+                    ref_score_neg = int(seq2score(subseq_ref_neg,scaled_pwm))
+                    if ref_score_neg > score_threshold:
+                        ref_pval_neg = score2pval(ref_score_neg, score_distribution)
+                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+ucsc_coord+"_-\t"+str(ref_pval_neg)+"\t-\t"+str(subseq_ref_neg).upper()+"\n")
