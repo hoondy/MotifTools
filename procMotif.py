@@ -294,7 +294,10 @@ def dscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
                 seq_end = int(line_split[2])
                 skey = seq_chr+":"+str(seq_start)+"-"+str(seq_end) # 0-based
                 # print skey
-                seq = peak_seq[skey]
+                if skey in peak_seq:
+                    seq = peak_seq[skey]
+                else:
+                    continue # handle out of bound seq range: Feature (chrM:16236-16616) beyond the length of chrM size (16571 bp).  Skipping.
                 # print seq
 
                 # variant info
@@ -334,6 +337,9 @@ def dscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
 
                     subseq_ref_pos = subseq_prefix+var_ref.upper()+subseq_postfix
                     subseq_alt_pos = subseq_prefix+var_alt.upper()+subseq_postfix
+
+                    if "N" in subseq_ref_pos.upper():
+                        continue
 
                     subseq_ref_pos_print = subseq_prefix+"["+var_ref.upper()+"]"+subseq_postfix
                     subseq_alt_pos_print = subseq_prefix+"["+var_alt.upper()+"]"+subseq_postfix
@@ -453,7 +459,10 @@ def bscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
                 seq_end = int(line_split[2])
                 skey = seq_chr+":"+str(seq_start)+"-"+str(seq_end) # 0-based
                 # print skey
-                seq = peak_seq[skey]
+                if skey in peak_seq:
+                    seq = peak_seq[skey]
+                else:
+                    continue # handle out of bound seq range: Feature (chrM:16236-16616) beyond the length of chrM size (16571 bp).  Skipping.
                 # print seq
 
                 # variant info
@@ -493,6 +502,9 @@ def bscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
 
                     subseq_ref_pos = subseq_prefix+var_ref.upper()+subseq_postfix
                     subseq_alt_pos = subseq_prefix+var_alt.upper()+subseq_postfix
+
+                    if "N" in subseq_ref_pos.upper():
+                        continue
 
                     subseq_pos_print = subseq_prefix+"["+var_ref.upper()+"/"+var_alt.upper()+"]"+subseq_postfix
 
