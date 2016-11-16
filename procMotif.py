@@ -147,7 +147,7 @@ def scaled_pwm2scoredist(m, scaled_pwm):
 
 def pwm2pval(motifName, seq):
 
-    with open("pfm_vertebrates.txt") as handle:
+    with open(Config.get("data","pfm_db_jaspar")) as handle:
         for m in motifs.parse(handle, "jaspar"):
             if str(m.name).upper() == str(motifName).upper():
                 ppm = m.counts.normalize(pseudocounts=C_PSEUDOCOUNTS)
