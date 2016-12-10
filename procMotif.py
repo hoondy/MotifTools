@@ -386,7 +386,7 @@ def dscoreAnalysis(sample, tfName, fastaFile, bedFile, outFile):
                         alt_rawscore_pos = seq2score(subseq_alt_pos,pwm)
                         if abs(dscore_pos) > 0:
                             # print dscore_pos
-                            output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+sample+"_"+tfName+"_+\t"+str(dscore_pos)+"\t+\t"+str(ref_pval_pos)+"\t"+str(alt_pval_pos)+"\t"+str(subseq_ref_pos_print)+"\t"+str(subseq_alt_pos_print)+"\t"+str(ref_rawscore_pos)+"\t"+str(alt_rawscore_pos)+"\t"+str(motif_varpos_pos)+"\n")
+                            output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+sample+"_"+tfName+"\t"+str(dscore_pos)+"\t+\t"+str(ref_pval_pos)+"\t"+str(alt_pval_pos)+"\t"+str(subseq_ref_pos_print)+"\t"+str(subseq_alt_pos_print)+"\t"+str(ref_rawscore_pos)+"\t"+str(alt_rawscore_pos)+"\t"+str(motif_varpos_pos)+"\n")
 
                     ### REVERSE STRAND ###
 
@@ -402,7 +402,7 @@ def dscoreAnalysis(sample, tfName, fastaFile, bedFile, outFile):
                         alt_rawscore_neg = seq2score(subseq_alt_neg,pwm)
                         if abs(dscore_neg) > 0:
                             # print dscore_neg
-                            output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+sample+"_"+tfName+"_-\t"+str(dscore_neg)+"\t-\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\t"+str(subseq_ref_neg_print)+"\t"+str(subseq_alt_neg_print)+"\t"+str(ref_rawscore_neg)+"\t"+str(alt_rawscore_neg)+"\t"+str(motif_varpos_neg)+"\n")
+                            output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+sample+"_"+tfName+"\t"+str(dscore_neg)+"\t-\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\t"+str(subseq_ref_neg_print)+"\t"+str(subseq_alt_neg_print)+"\t"+str(ref_rawscore_neg)+"\t"+str(alt_rawscore_neg)+"\t"+str(motif_varpos_neg)+"\n")
 
 def bscoreAnalysis(sample, tfName, fastaFile, bedFile, outFile):
 
@@ -548,7 +548,7 @@ def bscoreAnalysis(sample, tfName, fastaFile, bedFile, outFile):
                         # count relative position
                         count[motif_varpos_pos-1]+=1
 
-                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+sample+"_"+tfName+"_+\t"+str(motif_varpos_pos)+"\t+\t"+str(subseq_pos_print)+"\t"+str(ref_pval_pos)+"\t"+str(alt_pval_pos)+"\n")
+                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+sample+"_"+tfName+"\t"+str(motif_varpos_pos)+"\t+\t"+str(subseq_pos_print)+"\t"+str(ref_pval_pos)+"\t"+str(alt_pval_pos)+"\n")
 
                     ### REVERSE STRAND ###
 
@@ -563,7 +563,7 @@ def bscoreAnalysis(sample, tfName, fastaFile, bedFile, outFile):
                         # count relative position
                         count[motif_varpos_neg-1]+=1
 
-                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+sample+"_"+tfName+"_-\t"+str(motif_varpos_neg)+"\t-\t"+str(subseq_neg_print)+"\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\n")
+                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+sample+"_"+tfName+"\t"+str(motif_varpos_neg)+"\t-\t"+str(subseq_neg_print)+"\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\n")
 
     print "DONE"
     print ""
@@ -666,10 +666,10 @@ def callMotif(sample, tfName, fastaFile, bedFile, outFile):
                     ref_score_pos = int(seq2score(subseq_ref_pos,scaled_pwm))
                     if ref_score_pos > score_threshold:
                         ref_pval_pos = score2pval(ref_score_pos, score_distribution)
-                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+sample+"_"+tfName+"_+\t"+str(ref_pval_pos)+"\t+\t"+str(subseq_ref_pos).upper()+"\n")
+                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+sample+"_"+tfName+"\t"+str(ref_pval_pos)+"\t+\t"+str(subseq_ref_pos).upper()+"\n")
 
                     ### REVERSE STRAND ###
                     ref_score_neg = int(seq2score(subseq_ref_neg,scaled_pwm))
                     if ref_score_neg > score_threshold:
                         ref_pval_neg = score2pval(ref_score_neg, score_distribution)
-                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+sample+"_"+tfName+"_-\t"+str(ref_pval_neg)+"\t-\t"+str(subseq_ref_neg).upper()+"\n")
+                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+sample+"_"+tfName+"\t"+str(ref_pval_neg)+"\t-\t"+str(subseq_ref_neg).upper()+"\n")
