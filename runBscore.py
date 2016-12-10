@@ -51,7 +51,7 @@ def main():
 
     # calculate B-score
     print "Calculate B-score"
-    procMotif.bscoreAnalysis(tf, "tf_peak_"+sample+"_"+tf+".fa", "tf_peak_"+sample+"_"+tf+".bed", "bscore_"+sample+"_"+tf+".bed")
+    procMotif.bscoreAnalysis(sample, tf, "tf_peak_"+sample+"_"+tf+".fa", "tf_peak_"+sample+"_"+tf+".bed", "bscore_"+sample+"_"+tf+".bed")
     print "DONE"
 
     # sort & uniq

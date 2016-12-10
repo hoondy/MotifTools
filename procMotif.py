@@ -245,7 +245,7 @@ def getWeblogo(m):
     # unit_name='probability'
     # the height of the y-axis is the maximum entropy for the given sequence type. (log2 4 = 2 bits for DNA/RNA, log2 20 = 4.3 bits for protein.)
 
-def dscoreAnalysis(tfName, fastaFile, bedFile, outFile):
+def dscoreAnalysis(sample, tfName, fastaFile, bedFile, outFile):
 
     ##############################
     ### 1. PROCESS TF MOTIF
@@ -386,7 +386,7 @@ def dscoreAnalysis(tfName, fastaFile, bedFile, outFile):
                         alt_rawscore_pos = seq2score(subseq_alt_pos,pwm)
                         if abs(dscore_pos) > 0:
                             # print dscore_pos
-                            output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+ucsc_coord+"_+\t"+str(dscore_pos)+"\t+\t"+str(ref_pval_pos)+"\t"+str(alt_pval_pos)+"\t"+str(subseq_ref_pos_print)+"\t"+str(subseq_alt_pos_print)+"\t"+str(ref_rawscore_pos)+"\t"+str(alt_rawscore_pos)+"\t"+str(motif_varpos_pos)+"\n")
+                            output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+sample+"_"+tfName+"_+\t"+str(dscore_pos)+"\t+\t"+str(ref_pval_pos)+"\t"+str(alt_pval_pos)+"\t"+str(subseq_ref_pos_print)+"\t"+str(subseq_alt_pos_print)+"\t"+str(ref_rawscore_pos)+"\t"+str(alt_rawscore_pos)+"\t"+str(motif_varpos_pos)+"\n")
 
                     ### REVERSE STRAND ###
 
@@ -402,9 +402,9 @@ def dscoreAnalysis(tfName, fastaFile, bedFile, outFile):
                         alt_rawscore_neg = seq2score(subseq_alt_neg,pwm)
                         if abs(dscore_neg) > 0:
                             # print dscore_neg
-                            output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+ucsc_coord+"_-\t"+str(dscore_neg)+"\t-\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\t"+str(subseq_ref_neg_print)+"\t"+str(subseq_alt_neg_print)+"\t"+str(ref_rawscore_neg)+"\t"+str(alt_rawscore_neg)+"\t"+str(motif_varpos_neg)+"\n")
+                            output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+sample+"_"+tfName+"_-\t"+str(dscore_neg)+"\t-\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\t"+str(subseq_ref_neg_print)+"\t"+str(subseq_alt_neg_print)+"\t"+str(ref_rawscore_neg)+"\t"+str(alt_rawscore_neg)+"\t"+str(motif_varpos_neg)+"\n")
 
-def bscoreAnalysis(tfName, fastaFile, bedFile, outFile):
+def bscoreAnalysis(sample, tfName, fastaFile, bedFile, outFile):
 
     ##############################
     ### 1. PROCESS TF MOTIF
@@ -548,7 +548,7 @@ def bscoreAnalysis(tfName, fastaFile, bedFile, outFile):
                         # count relative position
                         count[motif_varpos_pos-1]+=1
 
-                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+ucsc_coord+"_+\t"+str(motif_varpos_pos)+"\t+\t"+str(subseq_pos_print)+"\t"+str(ref_pval_pos)+"\t"+str(alt_pval_pos)+"\n")
+                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+sample+"_"+tfName+"_+\t"+str(motif_varpos_pos)+"\t+\t"+str(subseq_pos_print)+"\t"+str(ref_pval_pos)+"\t"+str(alt_pval_pos)+"\n")
 
                     ### REVERSE STRAND ###
 
@@ -563,7 +563,7 @@ def bscoreAnalysis(tfName, fastaFile, bedFile, outFile):
                         # count relative position
                         count[motif_varpos_neg-1]+=1
 
-                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+ucsc_coord+"_-\t"+str(motif_varpos_neg)+"\t-\t"+str(subseq_neg_print)+"\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\n")
+                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+sample+"_"+tfName+"_-\t"+str(motif_varpos_neg)+"\t-\t"+str(subseq_neg_print)+"\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\n")
 
     print "DONE"
     print ""
@@ -574,7 +574,7 @@ def bscoreAnalysis(tfName, fastaFile, bedFile, outFile):
     for idx, val in enumerate(count):
         print str(idx+1)+"\t"+str(val)
 
-def callMotif(tfName, fastaFile, bedFile, pvalThreshold, outFile):
+def callMotif(sample, tfName, fastaFile, bedFile, outFile):
 
     ##############################
     ### 1. PROCESS TF MOTIF
@@ -609,7 +609,7 @@ def callMotif(tfName, fastaFile, bedFile, pvalThreshold, outFile):
     score_distribution = scaled_pwm2scoredist(m, scaled_pwm)
 
     ### score threshold: discard motif with score smaller than this
-    score_threshold = pval2score(pvalThreshold, score_distribution)
+    score_threshold = pval2score(C_PVAL_THRESHOLD, score_distribution)
 
     ##############################
     ### 2. PROCESS FASTA SEQ
@@ -666,10 +666,10 @@ def callMotif(tfName, fastaFile, bedFile, pvalThreshold, outFile):
                     ref_score_pos = int(seq2score(subseq_ref_pos,scaled_pwm))
                     if ref_score_pos > score_threshold:
                         ref_pval_pos = score2pval(ref_score_pos, score_distribution)
-                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+ucsc_coord+"_+\t"+str(ref_pval_pos)+"\t+\t"+str(subseq_ref_pos).upper()+"\n")
+                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+sample+"_"+tfName+"_+\t"+str(ref_pval_pos)+"\t+\t"+str(subseq_ref_pos).upper()+"\n")
 
                     ### REVERSE STRAND ###
                     ref_score_neg = int(seq2score(subseq_ref_neg,scaled_pwm))
                     if ref_score_neg > score_threshold:
                         ref_pval_neg = score2pval(ref_score_neg, score_distribution)
-                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+ucsc_coord+"_-\t"+str(ref_pval_neg)+"\t-\t"+str(subseq_ref_neg).upper()+"\n")
+                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+sample+"_"+tfName+"_-\t"+str(ref_pval_neg)+"\t-\t"+str(subseq_ref_neg).upper()+"\n")

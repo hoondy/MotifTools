@@ -51,7 +51,7 @@ def main():
 
     # calculate D-score
     print "Calculate D-score"
-    procMotif.dscoreAnalysis(tf, "tf_peak_"+sample+"_"+tf+".fa", "tf_peak_"+sample+"_"+tf+".bed", "dscore_"+sample+"_"+tf+".bed")
+    procMotif.dscoreAnalysis(sample, tf, "tf_peak_"+sample+"_"+tf+".fa", "tf_peak_"+sample+"_"+tf+".bed", "dscore_"+sample+"_"+tf+".bed")
     print "DONE"
 
     # sort & uniq

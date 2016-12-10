@@ -8,12 +8,7 @@ __version__ = "1.0.0"
 __maintainer__ = "Donghoon Lee"
 __email__ = "donghoon.lee@yale.edu"
 
-import argparse, procMotif, subprocess, ConfigParser
-
-### LOAD CONFIG ###
-
-Config = ConfigParser.ConfigParser()
-Config.read("config.ini")
+import argparse, procMotif
 
 ### LOAD ARGs ###
 
@@ -25,14 +20,6 @@ parser.add_argument('-r','--ref', help='REF Genome FASTA File',required=True)
 args = parser.parse_args()
 
 ###
-
-def getFasta(fastaFile, bedFile, outFile):
-    subprocess.call(Config.get("app","bedtools")+" getfasta -fi "+fastaFile+" -bed "+bedFile+" -fo "+outFile, shell=True)
-    return outFile
-
-def sortUniq(inFile, outFile):
-    subprocess.call("sort -k1,1 -k2,2n "+inFile+" | uniq > "+outFile, shell=True)
-    return outFile
 
 def main():
 
@@ -53,17 +40,17 @@ def main():
 
     # getfasta
     print "Get FASTA"
-    getFasta(args.ref, args.bed, "tf_peak_"+sample+"_"+tf+".fa")
+    procMotif.getFasta(args.ref, args.bed, "tf_peak_"+sample+"_"+tf+".fa")
     print "DONE"
 
     # call TF motif
     print "Call TF motif"
-    procMotif.callMotif(tf, "tf_peak_"+sample+"_"+tf+".fa", args.bed, float(Config.get("param","C_PVAL_THRESHOLD")), "tfbs_"+sample+"_"+tf+".bed")
+    procMotif.callMotif(sample, tf, "tf_peak_"+sample+"_"+tf+".fa", args.bed, "tfbs_"+sample+"_"+tf+".bed")
     print "DONE"
 
     # sort & uniq
     print "sort & uniq"
-    sortUniq("tfbs_"+sample+"_"+tf+".bed","tfbs_"+sample+"_"+tf+"_uniq.bed")
+    procMotif.sortUniq("tfbs_"+sample+"_"+tf+".bed","tfbs_"+sample+"_"+tf+"_uniq.bed")
     print "DONE"
 
 main()
