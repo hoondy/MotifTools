@@ -28,7 +28,8 @@ args = parser.parse_args()
 ###
 
 def getPeakWithVariant(bedFile, vcfFile, outFile):
-    subprocess.call(Config.get("app","bedtools")+" intersect -a "+bedFile+" -b "+vcfFile+" -wa -wb > "+outFile, shell=True)
+    # subprocess.call(Config.get("app","bedtools")+" intersect -a "+bedFile+" -b "+vcfFile+" -wa -wb > "+outFile, shell=True)
+    subprocess.call("awk -F'\t' 'BEGIN {OFS=\"\t\"}{print $1,$2,$3,$4}' "+bedFile+" | "+Config.get("app","bedtools")+" intersect -a - -b "+vcfFile+" -wa -wb > "+outFile, shell=True)
     return outFile
 
 def getFasta(fastaFile, bedFile, outFile):
