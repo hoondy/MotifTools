@@ -15,6 +15,7 @@ import math, collections, ConfigParser, glob, re
 import numpy as np
 from os import listdir
 from os.path import isfile, join
+import subprocess
 # from fractions import gcd
 
 ### LOAD CONFIG ###
@@ -29,8 +30,21 @@ C_BACKGROUND_G = float(Config.get("param","C_BACKGROUND_G"))
 C_BACKGROUND_T = float(Config.get("param","C_BACKGROUND_T"))
 C_BACKGROUND = {'A':C_BACKGROUND_A,'C':C_BACKGROUND_C,'G':C_BACKGROUND_G,'T':C_BACKGROUND_T}
 C_PRECISION = int(Config.get("param","C_PRECISION"))
+C_PVAL_THRESHOLD = float(Config.get("param","C_PVAL_THRESHOLD"))
 
 ###
+
+def getPeakWithVariant(bedFile, vcfFile, outFile):
+    subprocess.call("awk -F'\t' 'BEGIN {OFS=\"\t\"}{print $1,$2,$3,$4}' "+bedFile+" | "+Config.get("app","bedtools")+" intersect -a - -b "+vcfFile+" -wa -wb > "+outFile, shell=True)
+    return outFile
+
+def getFasta(fastaFile, bedFile, outFile):
+    subprocess.call(Config.get("app","bedtools")+" getfasta -fi "+fastaFile+" -bed "+bedFile+" -fo "+outFile, shell=True)
+    return outFile
+
+def sortUniq(inFile, outFile):
+    subprocess.call("sort -k1,1 -k2,2n "+inFile+" | uniq > "+outFile, shell=True)
+    return outFile
 
 def listOnlyFiles(path):
     return [f for f in listdir(path) if isfile(join(path, f))]
@@ -231,7 +245,7 @@ def getWeblogo(m):
     # unit_name='probability'
     # the height of the y-axis is the maximum entropy for the given sequence type. (log2 4 = 2 bits for DNA/RNA, log2 20 = 4.3 bits for protein.)
 
-def dscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
+def dscoreAnalysis(tfName, fastaFile, bedFile, outFile):
 
     ##############################
     ### 1. PROCESS TF MOTIF
@@ -263,7 +277,7 @@ def dscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
     score_distribution = scaled_pwm2scoredist(m, scaled_pwm)
 
     ### score threshold: discard motif with score smaller than this
-    score_threshold = pval2score(pvalThreshold, score_distribution)
+    score_threshold = pval2score(C_PVAL_THRESHOLD, score_distribution)
 
     ##############################
     ### 2. PROCESS FASTA SEQ
@@ -301,10 +315,10 @@ def dscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
                 # print seq
 
                 # variant info
-                var_chr = line_split[10]
-                var_pos = int(line_split[11])-1 # 1-based pos to 0-based pos
-                var_ref = line_split[13]
-                var_alt = line_split[14]
+                var_chr = line_split[4]
+                var_pos = int(line_split[5])-1 # 1-based pos to 0-based pos
+                var_ref = line_split[7]
+                var_alt = line_split[8]
                 # print var_chr,var_pos,var_ref,var_alt
 
                 # seq before variant
@@ -390,7 +404,7 @@ def dscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
                             # print dscore_neg
                             output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+ucsc_coord+"_-\t"+str(dscore_neg)+"\t-\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\t"+str(subseq_ref_neg_print)+"\t"+str(subseq_alt_neg_print)+"\t"+str(ref_rawscore_neg)+"\t"+str(alt_rawscore_neg)+"\t"+str(motif_varpos_neg)+"\n")
 
-def bscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
+def bscoreAnalysis(tfName, fastaFile, bedFile, outFile):
 
     ##############################
     ### 1. PROCESS TF MOTIF
@@ -425,7 +439,7 @@ def bscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
     score_distribution = scaled_pwm2scoredist(m, scaled_pwm)
 
     ### score threshold: discard motif with score smaller than this
-    score_threshold = pval2score(pvalThreshold, score_distribution)
+    score_threshold = pval2score(C_PVAL_THRESHOLD, score_distribution)
 
     ##############################
     ### 2. PROCESS FASTA SEQ
@@ -466,10 +480,10 @@ def bscoreAnalysis(tfName, fastaFile, bedFile, pvalThreshold, outFile):
                 # print seq
 
                 # variant info
-                var_chr = line_split[10]
-                var_pos = int(line_split[11])-1 # 1-based pos to 0-based pos
-                var_ref = line_split[13]
-                var_alt = line_split[14]
+                var_chr = line_split[4]
+                var_pos = int(line_split[5])-1 # 1-based pos to 0-based pos
+                var_ref = line_split[7]
+                var_alt = line_split[8]
                 # print var_chr,var_pos,var_ref,var_alt
 
                 # seq before variant
