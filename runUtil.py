@@ -39,4 +39,4 @@ args = parser.parse_args()
 ###
 
 if args.option == "makePFM":
-    procMotif.jaspar2pfm(Config.get("data","pfm_path"),Config.get("data","pfm_db_jaspar"))
+    procMotif.jaspar2pfm(Config.get("data","pfm_db_jaspar"),Config.get("data","pfm_path"))
