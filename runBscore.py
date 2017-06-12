@@ -8,6 +8,10 @@ __version__ = "1.0.0"
 __maintainer__ = "Donghoon Lee"
 __email__ = "donghoon.lee@yale.edu"
 
+###
+### Burden Score (b-score)
+###
+
 import argparse, procMotif
 
 ### LOAD ARGs ###

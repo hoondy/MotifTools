@@ -67,6 +67,17 @@ def findMatchedPeak(cell, rawTF):
         if filename_split[4] == cell and filename_split[5] == rawTF:
             print "Found",filename,"for TF:",parseTF(filename_split[5])
 
+def jaspar2pfm(jasparFile, outDir):
+    with open(jasparFile) as handle:
+        for m in motifs.parse(handle, "jaspar"):
+            fileName = outDir+"/"+str(m.name).replace(":","_").upper()+".pfm"
+            with open(fileName, "w") as output:
+                output.write(m.format("jaspar"))
+
+def loadJasparMotif(path2pfm):
+    with open(path2pfm) as handle:
+        return motifs.read(handle, "jaspar")
+
 ###
 
 def get_jaspar_motif(tfName):
@@ -245,18 +256,14 @@ def getWeblogo(m):
     # unit_name='probability'
     # the height of the y-axis is the maximum entropy for the given sequence type. (log2 4 = 2 bits for DNA/RNA, log2 20 = 4.3 bits for protein.)
 
-def dscoreAnalysis(sample, tfName, fastaFile, bedFile, outFile):
+def dscoreAnalysis(name, pfmFile, bedFile, fastaFile, outFile):
 
     ##############################
     ### 1. PROCESS TF MOTIF
     ##############################
 
     ### get JASPAR TF motif
-    m = get_jaspar_motif(tfName)
-
-    # stop if not found
-    if not m:
-        return None
+    m = loadJasparMotif(pfmFile)
 
     ppm = m.counts.normalize(pseudocounts=C_PSEUDOCOUNTS)
     pwm = ppm.log_odds(background=C_BACKGROUND)
@@ -386,7 +393,7 @@ def dscoreAnalysis(sample, tfName, fastaFile, bedFile, outFile):
                         alt_rawscore_pos = seq2score(subseq_alt_pos,pwm)
                         if abs(dscore_pos) > 0:
                             # print dscore_pos
-                            output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+sample+"_"+tfName+"_"+var_chr+":"+str(var_pos+1)+"_"+var_ref+">"+var_alt+"\t"+str(dscore_pos)+"\t+\t"+str(ref_pval_pos)+"\t"+str(alt_pval_pos)+"\t"+str(subseq_ref_pos_print)+"\t"+str(subseq_alt_pos_print)+"\t"+str(ref_rawscore_pos)+"\t"+str(alt_rawscore_pos)+"\t"+str(motif_varpos_pos)+"\n")
+                            output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+name+"_"+var_chr+":"+str(var_pos+1)+"_"+var_ref+">"+var_alt+"\t"+str(dscore_pos)+"\t+\t"+str(ref_pval_pos)+"\t"+str(alt_pval_pos)+"\t"+str(subseq_ref_pos_print)+"\t"+str(subseq_alt_pos_print)+"\t"+str(ref_rawscore_pos)+"\t"+str(alt_rawscore_pos)+"\t"+str(motif_varpos_pos)+"\n")
 
                     ### REVERSE STRAND ###
 
@@ -402,7 +409,7 @@ def dscoreAnalysis(sample, tfName, fastaFile, bedFile, outFile):
                         alt_rawscore_neg = seq2score(subseq_alt_neg,pwm)
                         if abs(dscore_neg) > 0:
                             # print dscore_neg
-                            output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+sample+"_"+tfName+"_"+var_chr+":"+str(var_pos+1)+"_"+var_ref+">"+var_alt+"\t"+str(dscore_neg)+"\t-\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\t"+str(subseq_ref_neg_print)+"\t"+str(subseq_alt_neg_print)+"\t"+str(ref_rawscore_neg)+"\t"+str(alt_rawscore_neg)+"\t"+str(motif_varpos_neg)+"\n")
+                            output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+name+"_"+var_chr+":"+str(var_pos+1)+"_"+var_ref+">"+var_alt+"\t"+str(dscore_neg)+"\t-\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\t"+str(subseq_ref_neg_print)+"\t"+str(subseq_alt_neg_print)+"\t"+str(ref_rawscore_neg)+"\t"+str(alt_rawscore_neg)+"\t"+str(motif_varpos_neg)+"\n")
 
 def bscoreAnalysis(sample, tfName, fastaFile, bedFile, outFile):
 
