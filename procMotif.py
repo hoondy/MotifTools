@@ -21,7 +21,7 @@ import subprocess
 ### LOAD CONFIG ###
 
 Config = ConfigParser.ConfigParser()
-Config.read("config.ini")
+Config.read("./config.ini")
 
 C_PSEUDOCOUNTS = float(Config.get("param","C_PSEUDOCOUNTS"))
 C_BACKGROUND_A = float(Config.get("param","C_BACKGROUND_A"))
@@ -77,6 +77,55 @@ def jaspar2pfm(jasparFile, outDir):
 def loadJasparMotif(path2pfm):
     with open(path2pfm) as handle:
         return motifs.read(handle, "jaspar")
+
+def meme2pfm(memeFile,outFile):
+
+    with open(memeFile, 'r') as f:
+
+        id = ""
+        name = ""
+        w = -1
+        nsite = 0
+        motif = ""
+
+        for idx,line in enumerate(f.readlines()):
+
+            if line.startswith("MOTIF"):
+                name = line.split(" ")[1].rstrip()
+                id = line.split(" ")[2].rstrip()
+                print name
+
+            if line.startswith("letter-probability matrix"):
+                w = int(line.split(" ")[5])
+                nsite = int(line.split(" ")[7])
+                print w, nsite
+            elif w>0:
+                motif=motif+line.rstrip()+"\n"
+                w -= 1
+            elif w==0:
+                print motif
+                m=np.fromstring(motif,sep=" ")
+                m=np.reshape(m,(-1,4))
+                m=nsite*m
+                m=np.rint(m)
+                m=m.transpose()
+
+                np.savetxt(outFile,m,fmt='%i')
+
+                lines = []
+                lines.append(">"+id+" "+name)
+                seq = ["A","C","G","T"]
+                with open(outFile, 'r') as g:
+                    for idx,line in enumerate(g.readlines()):
+                        lines.append(seq[idx]+" ["+line.rstrip()+"]")
+                with open(outFile, 'w') as h:
+                    for line in lines:
+                        h.write(line+"\n")
+
+                break
+
+
+    # for idx,line in enumerate(f.readlines()):
 
 ###
 
