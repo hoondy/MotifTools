@@ -29,13 +29,13 @@ A collection of python tools to evaluate a variant on TF motif
   * For example, hg19 genome can be downloaded from [here](http://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/)  
 * PFM in Jaspar format
   * For example, a file containing count matrix in the following format
-```shell
->MA0491.1	JUND
-A  [12389 15163     0     0 38710     0     0  1547 38710     0  5786 ]
-C  [  759  4824     0     0     0 22857     0 37163     0  5136 14956 ]
-G  [13640 18723     0 38710     0 14078     0     0     0  2301 12429 ]
-T  [11922     0 38710     0     0  1775 38710     0     0 31273  5539 ]
-```
+  ```shell
+  >MA0491.1	JUND
+  A  [12389 15163     0     0 38710     0     0  1547 38710     0  5786 ]
+  C  [  759  4824     0     0     0 22857     0 37163     0  5136 14956 ]
+  G  [13640 18723     0 38710     0 14078     0     0     0  2301 12429 ]
+  T  [11922     0 38710     0     0  1775 38710     0     0 31273  5539 ]
+  ```
 
 ## Usage
 
