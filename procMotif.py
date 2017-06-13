@@ -438,8 +438,8 @@ def dscoreAnalysis(name, pfmFile, bedFile, fastaFile, outFile):
                         alt_pval_pos = score2pval(alt_score_pos, score_distribution)
 
                         dscore_pos = -10 * math.log10(ref_pval_pos/alt_pval_pos)
-                        ref_rawscore_pos = seq2score(subseq_ref_pos,pwm)
-                        alt_rawscore_pos = seq2score(subseq_alt_pos,pwm)
+                        ref_rawscore_pos = seq2score(subseq_ref_pos,scaled_pwm)
+                        alt_rawscore_pos = seq2score(subseq_alt_pos,scaled_pwm)
                         if abs(dscore_pos) > 0:
                             # print dscore_pos
                             output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+name+"_"+var_chr+":"+str(var_pos+1)+"_"+var_ref+">"+var_alt+"\t"+str(dscore_pos)+"\t+\t"+str(ref_pval_pos)+"\t"+str(alt_pval_pos)+"\t"+str(subseq_ref_pos_print)+"\t"+str(subseq_alt_pos_print)+"\t"+str(ref_rawscore_pos)+"\t"+str(alt_rawscore_pos)+"\t"+str(motif_varpos_pos)+"\n")
@@ -454,8 +454,8 @@ def dscoreAnalysis(name, pfmFile, bedFile, fastaFile, outFile):
                         alt_pval_neg = score2pval(alt_score_neg, score_distribution)
 
                         dscore_neg = -10 * math.log10(ref_pval_neg/alt_pval_neg)
-                        ref_rawscore_neg = seq2score(subseq_ref_neg,pwm)
-                        alt_rawscore_neg = seq2score(subseq_alt_neg,pwm)
+                        ref_rawscore_neg = seq2score(subseq_ref_neg,scaled_pwm)
+                        alt_rawscore_neg = seq2score(subseq_alt_neg,scaled_pwm)
                         if abs(dscore_neg) > 0:
                             # print dscore_neg
                             output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+name+"_"+var_chr+":"+str(var_pos+1)+"_"+var_ref+">"+var_alt+"\t"+str(dscore_neg)+"\t-\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\t"+str(subseq_ref_neg_print)+"\t"+str(subseq_alt_neg_print)+"\t"+str(ref_rawscore_neg)+"\t"+str(alt_rawscore_neg)+"\t"+str(motif_varpos_neg)+"\n")
