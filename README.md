@@ -10,7 +10,7 @@ A collection of python tools to evaluate a variant on TF motif
 * Python 2.6 or higher (tested on Python 2.7.12)
 * BioPython 1.66 or higher
 * NumPy
-* BedTools
+* BedTools v2.26 or higher
 
 ## Config
 
@@ -27,8 +27,8 @@ A collection of python tools to evaluate a variant on TF motif
 * Variant VCF file
 * Reference genome FASTA file
   * For example, hg19 genome can be downloaded from [here](http://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/)  
-* PFM in Jaspar format
-  * For example, a file containing count matrix in the following format
+* PFM in Jaspar 2016 PFM format
+  * For example, a file containing a single position frequency (count) matrix
   ```shell
   >MA0491.1	JUND
   A  [12389 15163     0     0 38710     0     0  1547 38710     0  5786 ]
@@ -40,14 +40,14 @@ A collection of python tools to evaluate a variant on TF motif
 ## Usage
 
 ```shell
-python runDscore.py --sample {"MCF-7"} --tf {"CTCF"} --bed {peak.bed} --vcf {variant.vcf} --ref {reference_genome.fa}
+python runDscore.py --name {"MCF-7_CTCF"} --bed {peak.bed} --pfm {CTCF.pfm} --vcf {variant.vcf} --ref {reference_genome.fa}
 python runBscore.py --sample {"MCF-7"} --tf {"CTCF"} --bed {peak.bed} --vcf {variant.vcf} --ref {reference_genome.fa}
 ```
 
 or
 
 ```shell
-python runDscore.py -s {"MCF-7"} -t {"CTCF"} -b {peak.bed} -v {variant.vcf} -r {reference_genome.fa}
+python runDscore.py -n {"MCF-7_CTCF"} -b {peak.bed} -p {CTCF.pfm} -v {variant.vcf} -r {reference_genome.fa}
 python runBscore.py -s {"MCF-7"} -t {"CTCF"} -b {peak.bed} -v {variant.vcf} -r {reference_genome.fa}
 ```
 
