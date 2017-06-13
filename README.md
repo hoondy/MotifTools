@@ -78,8 +78,8 @@ chr17	53591549	53591569	chr17:53591550-53591568_-	3.72653409279	-	1.96814653464e
 * COLUMN 08: P-value on alternate genome
 * COLUMN 09: motif sequence on reference genome
 * COLUMN 10: motif sequence on alternate genome
-* COLUMN 11: -10 * log(P-val_Ref)
-* COLUMN 12: -10 * log(P-val_Alt)
+* COLUMN 11: raw motif score on reference genome
+* COLUMN 12: raw motif score on alternate genome
 * COLUMN 13: variant position w.r.t. motif
 
 ## How to interpret D-score
