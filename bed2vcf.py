@@ -13,6 +13,8 @@ __email__ = "donghoon.lee@yale.edu"
 ###
 
 import argparse, sys
+from signal import signal, SIGPIPE, SIG_DFL
+signal(SIGPIPE,SIG_DFL)
 
 ### LOAD ARGs ###
 
@@ -30,7 +32,7 @@ with open(args.bed, 'r') as f:
     for idx,line in enumerate(f.readlines()):
         tabs=line.strip().split("\t")
         if len(tabs)<5:
-            sys.stdout.write("Malformatted BED file. It requires 5 columns at minimum. Exiting.")
+            print "Malformatted BED file. It requires 5 columns at minimum. Exiting."
             sys.exit(1)
         else:
             id = tabs[0]+":"+tabs[2]+"|"+tabs[3]+">"+tabs[4]
@@ -39,4 +41,4 @@ with open(args.bed, 'r') as f:
                 for i in range(5,len(tabs)):
                     extra=extra+","+tabs[i]
                 extra = extra.strip(",")
-            sys.stdout.write(tabs[0]+"\t"+tabs[2]+"\t"+id+"\t"+tabs[3]+"\t"+tabs[4]+"\t"+"."+"\t"+"."+"\t"+"VA="+extra)
+            print tabs[0]+"\t"+tabs[2]+"\t"+id+"\t"+tabs[3]+"\t"+tabs[4]+"\t"+"."+"\t"+"."+"\t"+"VA="+extra
