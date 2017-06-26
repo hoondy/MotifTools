@@ -26,10 +26,9 @@ print "##fileformat=VCFv4.2"
 print "##INFO=<ID=VA,Number=.,Type=String,Description=\"Variant Annotation\">"
 print "#CHROM"+"\t"+"POS"+"\t"+"ID"+"\t"+"REF"+"\t"+"ALT"+"\t"+"QUAL"+"\t"+"FILTER"+"\t"+"INFO"
 
+subprocess.call("sort -k1,1V -k2,2n "+args.bed+" > tmp.sorted", shell=True)
 
-subprocess.call("sort -k1,1h -k2,2n "+args.bed+" > "+args.bed+".sorted", shell=True)
-
-with open(args.bed+".sorted", 'r') as f:
+with open("tmp.sorted", 'r') as f:
     for idx,line in enumerate(f.readlines()):
         tabs=line.strip().split("\t")
         if len(tabs)<5:
@@ -44,4 +43,4 @@ with open(args.bed+".sorted", 'r') as f:
                 extra = extra.strip(",")
             print tabs[0]+"\t"+tabs[2]+"\t"+id+"\t"+tabs[3]+"\t"+tabs[4]+"\t"+"."+"\t"+"."+"\t"+"VA="+extra
 
-subprocess.call("rm "+args.bed+".sorted", shell=True)
+subprocess.call("rm tmp.sorted", shell=True)
