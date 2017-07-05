@@ -127,8 +127,6 @@ def meme2pfm(memeFile,outFile):
 
     # for idx,line in enumerate(f.readlines()):
 
-meme2pfm("data/dreme.txt","test.pfm")
-
 ###
 
 def get_jaspar_motif(tfName):
