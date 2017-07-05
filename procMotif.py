@@ -307,6 +307,12 @@ def getWeblogo(m):
 
 def dscoreAnalysis(name, pfmFile, bedFile, fastaFile, outFile):
 
+    print "Name:",name
+    print "PFM:",pfmFile
+    print "BED:",bedFile
+    print "FASTA:",fastaFile
+    print "OUTPUT:",outFile
+
     ##############################
     ### 1. PROCESS TF MOTIF
     ##############################
