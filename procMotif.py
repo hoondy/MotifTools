@@ -203,10 +203,16 @@ def scaled_pwm2scoredist(m, scaled_pwm):
     ### score distribution
     ###
 
-    score_distribution = np.zeros(shape=(len(m),len(m)*C_PRECISION), dtype=np.int)
+    ### For each value in the first column of your motif, put a 1 in the corresponding entry in the first row of the matrix
+    ### There are only 4 possible sequences of length 1
+
+    score_distribution = np.zeros(shape=(len(m),len(m)*C_PRECISION+1), dtype=np.int)
     print np.shape(score_distribution)
 
+    ###
     ### proc tf motif
+    ###
+
     # init first row
     for i, nt in enumerate(['A','C','G','T']):
         score_distribution[0,scaled_pwm[i,0]] += 1
@@ -253,8 +259,9 @@ def pwm2pval(motifName, seq):
     print scaled_pwm
 
     ### score distribution
-    score_distribution = np.zeros(shape=(len(m),len(m)*C_PRECISION), dtype=np.int)
+    score_distribution = np.zeros(shape=(len(m),len(m)*C_PRECISION+1), dtype=np.int)
     print np.shape(score_distribution)
+
     # init first row
     for i, nt in enumerate(['A','C','G','T']):
         score_distribution[0,scaled_pwm[i,0]] += 1
