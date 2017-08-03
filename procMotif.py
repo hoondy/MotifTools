@@ -415,8 +415,7 @@ def dscoreAnalysis(name, pfmFile, bedFile, fastaFile, outFile):
                     subseq_postfix = seq[var_pos-seq_start+1:subseq_start-seq_start+len(m)]
 
                     if subseq_var.upper() != var_ref.upper():
-                        print "WARNING! Reference sequence mismatch:",subseq_var,var_ref,var_pos
-                        return None
+                        print "WARNING! Reference sequence mismatch: at the position",var_chr,":",var_pos,"reference sequence has the base",subseq_var,", but the variant has",var_ref,">",var_alt,"mutation"
 
                     subseq_ref_pos = subseq_prefix+var_ref.upper()+subseq_postfix
                     subseq_alt_pos = subseq_prefix+var_alt.upper()+subseq_postfix
@@ -580,8 +579,7 @@ def bscoreAnalysis(sample, tfName, fastaFile, bedFile, outFile):
                     subseq_postfix = seq[var_pos-seq_start+1:subseq_start-seq_start+len(m)]
 
                     if subseq_var.upper() != var_ref.upper():
-                        print "WARNING! Reference sequence mismatch:",subseq_var,var_ref,var_pos
-                        return None
+                        print "WARNING! Reference sequence mismatch: at the position",var_chr,":",var_pos,"reference sequence has the base",subseq_var,", but the variant has",var_ref,">",var_alt,"mutation"
 
                     subseq_ref_pos = subseq_prefix+var_ref.upper()+subseq_postfix
                     subseq_alt_pos = subseq_prefix+var_alt.upper()+subseq_postfix
