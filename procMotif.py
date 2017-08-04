@@ -579,7 +579,7 @@ def bscoreAnalysis(sample, tfName, fastaFile, bedFile, outFile):
                     subseq_postfix = seq[var_pos-seq_start+1:subseq_start-seq_start+len(m)]
 
                     if subseq_var.upper() != var_ref.upper():
-                        print "WARNING! Reference sequence mismatch: at the position",var_chr,":",var_pos,"reference sequence has the base",subseq_var,", but the variant has",var_ref,">",var_alt,"mutation. USCS coordinate:",ucsc_coord,subseq_prefix,subseq_var,subseq_postfix
+                        print "WARNING! Reference sequence mismatch: at the position",var_chr,":",var_pos+1,"reference sequence has the base",subseq_var,", but the variant has",var_ref,">",var_alt,"mutation. USCS coordinate:",ucsc_coord,subseq_prefix,subseq_var,subseq_postfix
 
                     subseq_ref_pos = subseq_prefix+var_ref.upper()+subseq_postfix
                     subseq_alt_pos = subseq_prefix+var_alt.upper()+subseq_postfix
