@@ -16,45 +16,37 @@ import argparse, procMotif
 
 ### LOAD ARGs ###
 
-parser = argparse.ArgumentParser(description='Call TF Motif')
-parser.add_argument('-s','--sample', help='Sample Name',required=True)
-parser.add_argument('-t','--tf', help='TF Name',required=True)
-parser.add_argument('-b','--bed', help='Peak BED File',required=True)
-parser.add_argument('-r','--ref', help='REF Genome FASTA File',required=True)
+parser = argparse.ArgumentParser(description='Call TF/RBP Motif')
+
+parser.add_argument('-n', '--name', help='Name', required=True)
+parser.add_argument('-b', '--bed', help='BED File', required=True)
+
+parser.add_argument('-m', '--motif', help='Motif File', required=True)
+parser.add_argument('-f', '--format', help='Motif Format (default: jaspar) [Currently supported formats (case is ignored): AlignAce, MEME, MAST, TRANSFAC, pfm, jaspar, sites, ppm]', required=False, default="jaspar")
+
+parser.add_argument('-r', '--ref', help='REF Genome FASTA File', required=True)
+
 args = parser.parse_args()
 
 ###
 
 def main():
 
-    sample = args.sample
-    tf = procMotif.parseTF(args.tf)
-
-    print "Sample:",sample
-    print "TF:",tf
-
-    m = procMotif.get_jaspar_motif(tf)
-
-    # stop if not found
-    if not m:
-        print "WARNING: JASPAR motif NOT found"
-        return None
-
-    print "JASPAR motif ID:",m.matrix_id
+    name = args.name
 
     # getfasta
     print "Get FASTA"
-    procMotif.getFasta(args.ref, args.bed, "tf_peak_"+sample+"_"+tf+".fa")
+    procMotif.getFasta(args.ref, args.bed, "BEDFA_"+name+".fa")
     print "DONE"
 
-    # call TF motif
-    print "Call TF motif"
-    procMotif.callMotif(sample, tf, "tf_peak_"+sample+"_"+tf+".fa", args.bed, "tfbs_"+sample+"_"+tf+".bed")
+    # call motif
+    print "Call TF/RBP motif"
+    procMotif.callMotif(name, args.motif, args.format, args.bed, "BEDFA_"+name+".fa", "MOTIF_"+name+".bed")
     print "DONE"
 
     # sort & uniq
     print "sort & uniq"
-    procMotif.sortUniq("tfbs_"+sample+"_"+tf+".bed","tfbs_"+sample+"_"+tf+"_uniq.bed")
+    procMotif.sortUniq("MOTIF_"+name+".bed","MOTIF_"+name+"_uniq.bed")
     print "DONE"
 
 main()

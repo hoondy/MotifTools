@@ -16,7 +16,6 @@ import numpy as np
 from os import listdir
 from os.path import isfile, join
 import subprocess
-# from fractions import gcd
 
 ### LOAD CONFIG ###
 
@@ -71,6 +70,32 @@ def jaspar2pfm(jasparFile, outDir):
 def loadJasparMotif(path2pfm):
     with open(path2pfm) as handle:
         return motifs.read(handle, "jaspar")
+def motif2pssm(path2motif,format):
+    if format == "ppm":
+        ppm = np.loadtxt(path2motif)
+        print "PPM:"
+        print ppm
+        print ""
+
+        pssm=np.log2((ppm+1E-9)/0.25)
+        return pssm
+    else:
+        with open(path2motif) as handle:
+            m = motifs.read(handle, format)
+
+            pfm = m.counts
+            print "PFM:"
+            print pfm
+
+            ppm = pfm.normalize(pseudocounts=C_PSEUDOCOUNTS)
+            print "PPM:"
+            print ppm
+
+            pssm = ppm.log_odds(background=C_BACKGROUND)
+            np_pssm = np.zeros(shape=(4,pssm.length))
+            for i, nt in enumerate(['A','C','G','T']):
+                np_pssm[i] = pssm[nt]
+            return np_pssm
 def meme2pfm(memeFile,outFile):
 
     with open(memeFile, 'r') as f:
@@ -162,30 +187,24 @@ def writePWM(m):
                 output.write(str(round(x,3))+" ")
             output.write("\n")
 
-def pwm2scaled_pwm(m, pwm):
+def pssm2scaled_pssm(pssm):
 
     ###
-    ### scale raw PWM scores ###
+    ### scale raw PSSM scores ###
     ###
-
-    # copy to np matrix
-    scaled_pwm = np.zeros(shape=(4,len(m)))
-    for i, nt in enumerate(['A','C','G','T']):
-        scaled_pwm[i] = pwm[nt]
 
     # subtract by min PWM score, to make non-negative matrix
-    scale_const = np.min(scaled_pwm)
-    nonneg_pwm = scaled_pwm - scale_const
+    scale_const = np.min(pssm)
+    nonneg_pssm = pssm - scale_const
 
     # scale PWM to range from 0 to C_PRECISION
-    scale_factor = (C_PRECISION/np.max(nonneg_pwm))
-    scaled_pwm = nonneg_pwm * scale_factor
+    scale_factor = (C_PRECISION/np.max(nonneg_pssm))
+    scaled_pssm = nonneg_pssm * scale_factor
 
     # round to nearest integer
-    scaled_pwm = np.rint(scaled_pwm).astype(int)
-
-    return scaled_pwm
-def scaled_pwm2scoredist(m, scaled_pwm):
+    scaled_pssm = np.rint(scaled_pssm).astype(int)
+    return scaled_pssm
+def scaled_pwm2scoredist(scaled_pwm):
 
     ###
     ### score distribution
@@ -194,7 +213,7 @@ def scaled_pwm2scoredist(m, scaled_pwm):
     ### For each value in the first column of your motif, put a 1 in the corresponding entry in the first row of the matrix
     ### There are only 4 possible sequences of length 1
 
-    score_distribution = np.zeros(shape=(len(m),len(m)*C_PRECISION+1), dtype=np.int)
+    score_distribution = np.zeros(shape=(scaled_pwm.shape[1],scaled_pwm.shape[1]*C_PRECISION+1), dtype=np.int)
     print np.shape(score_distribution)
 
     ###
@@ -205,7 +224,7 @@ def scaled_pwm2scoredist(m, scaled_pwm):
     for i, nt in enumerate(['A','C','G','T']):
         score_distribution[0,scaled_pwm[i,0]] += 1
     # rest of motif
-    for j in range(1,len(m)): ### j: 1 to length of motif
+    for j in range(1,scaled_pwm.shape[1]): ### j: 1 to length of motif
         # print "MOTIF pos:", j
         for k in scaled_pwm[:,j]:
             for idx, count in enumerate(score_distribution[j-1,:]):
@@ -297,10 +316,11 @@ def getWeblogo(m):
     # unit_name='probability'
     # the height of the y-axis is the maximum entropy for the given sequence type. (log2 4 = 2 bits for DNA/RNA, log2 20 = 4.3 bits for protein.)
 
-def dscoreAnalysis(name, pfmFile, bedFile, fastaFile, outFile):
+def dscoreAnalysis(name, motifFile, motifFormat, bedFile, fastaFile, outFile):
 
     print "Name:",name
-    print "PFM:",pfmFile
+    print "Motif:",motifFile
+    print "Format:",motifFormat
     print "BED:",bedFile
     print "FASTA:",fastaFile
     print "OUTPUT:",outFile
@@ -309,27 +329,22 @@ def dscoreAnalysis(name, pfmFile, bedFile, fastaFile, outFile):
     ### 1. PROCESS TF MOTIF
     ##############################
 
-    ### get JASPAR TF motif
-    m = loadJasparMotif(pfmFile)
+    ### scale PSSM to non-negative integer matrix
+    pssm = motif2pssm(motifFile,motifFormat)
+    print "PSSM:"
+    print pssm
+    print ""
 
-    pfm = m.counts
-    ppm = m.counts.normalize(pseudocounts=C_PSEUDOCOUNTS)
-    pwm = ppm.log_odds(background=C_BACKGROUND)
+    scaled_pssm = pssm2scaled_pssm(pssm)
+    print "Scaled PSSM:"
+    print scaled_pssm
+    print ""
 
-    print "PFM:"
-    print pfm
-    print "PPM:"
-    print ppm
-    print "PWM:"
-    print pwm
+    motif_len = pssm.shape[1]
+    print "Motif length:",motif_len
 
-    ### scale PWM to non-negative integer
-    scaled_pwm = pwm2scaled_pwm(m, pwm)
-
-    print "Scaled PWM:"
-    print scaled_pwm
-
-    score_distribution = scaled_pwm2scoredist(m, scaled_pwm)
+    ### non-negative integer PSSM score distribution
+    score_distribution = scaled_pwm2scoredist(scaled_pssm)
 
     ### score threshold: discard motif with score smaller than this
     score_threshold = pval2score(C_PVAL_THRESHOLD, score_distribution)
@@ -381,24 +396,24 @@ def dscoreAnalysis(name, pfmFile, bedFile, fastaFile, outFile):
                 # seq after variant
                 seq_postfix = seq[var_pos+1-seq_start:]
 
-                left = max(var_pos+1-len(m),var_pos-len(seq_prefix))
-                right = min(var_pos+len(m),var_pos+1+len(seq_postfix))
+                left = max(var_pos+1-motif_len,var_pos-len(seq_prefix))
+                right = min(var_pos+motif_len,var_pos+1+len(seq_postfix))
                 # print left,right
 
-                for subseq_start in range(left,right+1-len(m)):
+                for subseq_start in range(left,right+1-motif_len):
 
-                    ucsc_coord = seq_chr+":"+str(subseq_start+1)+"-"+str(subseq_start+len(m)) # 0-based to 1-based
+                    ucsc_coord = seq_chr+":"+str(subseq_start+1)+"-"+str(subseq_start+motif_len) # 0-based to 1-based
                     # print ucsc_coord
 
                     # var pos wrt to motif
                     motif_varpos_pos = var_pos-subseq_start+1 # 1-based variant position wrt motif
-                    motif_varpos_neg = len(m)-var_pos+subseq_start # 1-based variant position wrt motif
+                    motif_varpos_neg = motif_len-var_pos+subseq_start # 1-based variant position wrt motif
                     # print "var pos wrt TF motif (+):",motif_varpos_pos
                     # print "var pos wrt TF motif (-):",motif_varpos_neg
 
                     subseq_prefix = seq[subseq_start-seq_start:var_pos-seq_start]
                     subseq_var = seq[var_pos-seq_start]
-                    subseq_postfix = seq[var_pos-seq_start+1:subseq_start-seq_start+len(m)]
+                    subseq_postfix = seq[var_pos-seq_start+1:subseq_start-seq_start+motif_len]
 
                     if subseq_var.upper() != var_ref.upper():
                         print "WARNING! Reference sequence mismatch: at the position",var_chr,":",var_pos+1,"reference sequence has the base",subseq_var,", but the variant has",var_ref,">",var_alt,"mutation. USCS coordinate:",ucsc_coord,subseq_prefix,subseq_var,subseq_postfix
@@ -428,68 +443,57 @@ def dscoreAnalysis(name, pfmFile, bedFile, fastaFile, outFile):
 
                     ### FORWARD STRAND ###
 
-                    ref_score_pos = int(seq2score(subseq_ref_pos,scaled_pwm))
-                    alt_score_pos = int(seq2score(subseq_alt_pos,scaled_pwm))
+                    ref_score_pos = int(seq2score(subseq_ref_pos,scaled_pssm))
+                    alt_score_pos = int(seq2score(subseq_alt_pos,scaled_pssm))
 
                     if ref_score_pos > score_threshold or alt_score_pos > score_threshold:
                         ref_pval_pos = score2pval(ref_score_pos, score_distribution)
                         alt_pval_pos = score2pval(alt_score_pos, score_distribution)
 
                         dscore_pos = -10 * math.log10(ref_pval_pos/alt_pval_pos)
-                        ref_rawscore_pos = seq2score(subseq_ref_pos,pwm)
-                        alt_rawscore_pos = seq2score(subseq_alt_pos,pwm)
+                        ref_rawscore_pos = seq2score(subseq_ref_pos,pssm)
+                        alt_rawscore_pos = seq2score(subseq_alt_pos,pssm)
                         if abs(dscore_pos) > 0:
                             # print dscore_pos
-                            output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+name+"_"+var_chr+":"+str(var_pos+1)+"_"+var_ref+">"+var_alt+"\t"+str(dscore_pos)+"\t+\t"+str(ref_pval_pos)+"\t"+str(alt_pval_pos)+"\t"+str(subseq_ref_pos_print)+"\t"+str(subseq_alt_pos_print)+"\t"+str(ref_rawscore_pos)+"\t"+str(alt_rawscore_pos)+"\t"+str(motif_varpos_pos)+"\n")
+                            output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+motif_len)+"\t"+name+"_"+var_chr+":"+str(var_pos+1)+"_"+var_ref+">"+var_alt+"\t"+str(dscore_pos)+"\t+\t"+str(ref_pval_pos)+"\t"+str(alt_pval_pos)+"\t"+str(subseq_ref_pos_print)+"\t"+str(subseq_alt_pos_print)+"\t"+str(ref_rawscore_pos)+"\t"+str(alt_rawscore_pos)+"\t"+str(motif_varpos_pos)+"\n")
 
                     ### REVERSE STRAND ###
 
-                    ref_score_neg = int(seq2score(subseq_ref_neg,scaled_pwm))
-                    alt_score_neg = int(seq2score(subseq_alt_neg,scaled_pwm))
+                    ref_score_neg = int(seq2score(subseq_ref_neg,scaled_pssm))
+                    alt_score_neg = int(seq2score(subseq_alt_neg,scaled_pssm))
 
                     if ref_score_neg > score_threshold or alt_score_neg > score_threshold:
                         ref_pval_neg = score2pval(ref_score_neg, score_distribution)
                         alt_pval_neg = score2pval(alt_score_neg, score_distribution)
 
                         dscore_neg = -10 * math.log10(ref_pval_neg/alt_pval_neg)
-                        ref_rawscore_neg = seq2score(subseq_ref_neg,pwm)
-                        alt_rawscore_neg = seq2score(subseq_alt_neg,pwm)
+                        ref_rawscore_neg = seq2score(subseq_ref_neg,pssm)
+                        alt_rawscore_neg = seq2score(subseq_alt_neg,pssm)
                         if abs(dscore_neg) > 0:
                             # print dscore_neg
-                            output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+name+"_"+var_chr+":"+str(var_pos+1)+"_"+var_ref+">"+var_alt+"\t"+str(dscore_neg)+"\t-\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\t"+str(subseq_ref_neg_print)+"\t"+str(subseq_alt_neg_print)+"\t"+str(ref_rawscore_neg)+"\t"+str(alt_rawscore_neg)+"\t"+str(motif_varpos_neg)+"\n")
-def bscoreAnalysis(sample, tfName, fastaFile, bedFile, outFile):
+                            output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+motif_len)+"\t"+name+"_"+var_chr+":"+str(var_pos+1)+"_"+var_ref+">"+var_alt+"\t"+str(dscore_neg)+"\t-\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\t"+str(subseq_ref_neg_print)+"\t"+str(subseq_alt_neg_print)+"\t"+str(ref_rawscore_neg)+"\t"+str(alt_rawscore_neg)+"\t"+str(motif_varpos_neg)+"\n")
+def bscoreAnalysis(name, motifFile, motifFormat, bedFile, fastaFile, outFile):
 
     ##############################
     ### 1. PROCESS TF MOTIF
     ##############################
 
-    ### get JASPAR TF motif
-    m = get_jaspar_motif(tfName)
+    ### scale PSSM to non-negative integer matrix
+    pssm = motif2pssm(motifFile,motifFormat)
+    print "PSSM:"
+    print pssm
+    print ""
 
-    # stop if not found
-    if not m:
-        return None
+    scaled_pssm = pssm2scaled_pssm(pssm)
+    print "Scaled PSSM:"
+    print scaled_pssm
+    print ""
 
-    ppm = m.counts.normalize(pseudocounts=C_PSEUDOCOUNTS)
-    pwm = ppm.log_odds(background=C_BACKGROUND)
+    motif_len = pssm.shape[1]
+    print "Motif length:",motif_len
 
-    print "PFM:"
-    print m.counts
-    print "PPM:"
-    print ppm
-    print "PWM:"
-    print pwm
-
-    ### weblogo
-    getWeblogo(m)
-
-    ### scale PWM to non-negative integer
-    scaled_pwm = pwm2scaled_pwm(m, pwm)
-
-    print "Scaled PWM:"
-    print scaled_pwm
-
-    score_distribution = scaled_pwm2scoredist(m, scaled_pwm)
+    ### non-negative integer PSSM score distribution
+    score_distribution = scaled_pwm2scoredist(scaled_pssm)
 
     ### score threshold: discard motif with score smaller than this
     score_threshold = pval2score(C_PVAL_THRESHOLD, score_distribution)
@@ -511,7 +515,7 @@ def bscoreAnalysis(sample, tfName, fastaFile, bedFile, outFile):
     ### 3. PROCESS BED
     ##############################
 
-    count = np.zeros((len(m)), dtype=np.int)
+    count = np.zeros((motif_len), dtype=np.int)
 
     with open(outFile, 'w') as output:
         with open(bedFile, 'r') as input:
@@ -544,24 +548,24 @@ def bscoreAnalysis(sample, tfName, fastaFile, bedFile, outFile):
                 # seq after variant
                 seq_postfix = seq[var_pos+1-seq_start:]
 
-                left = max(var_pos+1-len(m),var_pos+1-len(seq_prefix))
-                right = min(var_pos+len(m),var_pos+len(seq_postfix))
+                left = max(var_pos+1-motif_len,var_pos+1-len(seq_prefix))
+                right = min(var_pos+motif_len,var_pos+len(seq_postfix))
                 # print left,right
 
-                for subseq_start in range(left,right+1-len(m)):
+                for subseq_start in range(left,right+1-motif_len):
 
-                    ucsc_coord = seq_chr+":"+str(subseq_start+1)+"-"+str(subseq_start+len(m)) # 0-based to 1-based
+                    ucsc_coord = seq_chr+":"+str(subseq_start+1)+"-"+str(subseq_start+motif_len) # 0-based to 1-based
                     # print ucsc_coord
 
                     # var pos wrt to motif
                     motif_varpos_pos = var_pos-subseq_start+1 # 1-based variant position wrt motif
-                    motif_varpos_neg = len(m)-var_pos+subseq_start # 1-based variant position wrt motif
+                    motif_varpos_neg = motif_len-var_pos+subseq_start # 1-based variant position wrt motif
                     # print "var pos wrt TF motif (+):",motif_varpos_pos
                     # print "var pos wrt TF motif (-):",motif_varpos_neg
 
                     subseq_prefix = seq[subseq_start-seq_start:var_pos-seq_start]
                     subseq_var = seq[var_pos-seq_start]
-                    subseq_postfix = seq[var_pos-seq_start+1:subseq_start-seq_start+len(m)]
+                    subseq_postfix = seq[var_pos-seq_start+1:subseq_start-seq_start+motif_len]
 
                     if subseq_var.upper() != var_ref.upper():
                         print "WARNING! Reference sequence mismatch: at the position",var_chr,":",var_pos+1,"reference sequence has the base",subseq_var,", but the variant has",var_ref,">",var_alt,"mutation. USCS coordinate:",ucsc_coord,subseq_prefix,subseq_var,subseq_postfix
@@ -589,8 +593,8 @@ def bscoreAnalysis(sample, tfName, fastaFile, bedFile, outFile):
 
                     ### FORWARD STRAND ###
 
-                    ref_score_pos = int(seq2score(subseq_ref_pos,scaled_pwm))
-                    alt_score_pos = int(seq2score(subseq_alt_pos,scaled_pwm))
+                    ref_score_pos = int(seq2score(subseq_ref_pos,scaled_pssm))
+                    alt_score_pos = int(seq2score(subseq_alt_pos,scaled_pssm))
 
                     if ref_score_pos > score_threshold or alt_score_pos > score_threshold:
 
@@ -600,12 +604,12 @@ def bscoreAnalysis(sample, tfName, fastaFile, bedFile, outFile):
                         # count relative position
                         count[motif_varpos_pos-1]+=1
 
-                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+sample+"_"+tfName+"_"+var_chr+":"+str(var_pos+1)+"_"+var_ref+">"+var_alt+"\t"+str(motif_varpos_pos)+"\t+\t"+str(subseq_pos_print)+"\t"+str(ref_pval_pos)+"\t"+str(alt_pval_pos)+"\n")
+                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+motif_len)+"\t"+name+"_"+var_chr+":"+str(var_pos+1)+"_"+var_ref+">"+var_alt+"\t"+str(motif_varpos_pos)+"\t+\t"+str(subseq_pos_print)+"\t"+str(ref_pval_pos)+"\t"+str(alt_pval_pos)+"\n")
 
                     ### REVERSE STRAND ###
 
-                    ref_score_neg = int(seq2score(subseq_ref_neg,scaled_pwm))
-                    alt_score_neg = int(seq2score(subseq_alt_neg,scaled_pwm))
+                    ref_score_neg = int(seq2score(subseq_ref_neg,scaled_pssm))
+                    alt_score_neg = int(seq2score(subseq_alt_neg,scaled_pssm))
 
                     if ref_score_neg > score_threshold or alt_score_neg > score_threshold:
 
@@ -615,7 +619,7 @@ def bscoreAnalysis(sample, tfName, fastaFile, bedFile, outFile):
                         # count relative position
                         count[motif_varpos_neg-1]+=1
 
-                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+sample+"_"+tfName+"_"+var_chr+":"+str(var_pos+1)+"_"+var_ref+">"+var_alt+"\t"+str(motif_varpos_neg)+"\t-\t"+str(subseq_neg_print)+"\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\n")
+                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+motif_len)+"\t"+name+"_"+var_chr+":"+str(var_pos+1)+"_"+var_ref+">"+var_alt+"\t"+str(motif_varpos_neg)+"\t-\t"+str(subseq_neg_print)+"\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\n")
 
     print "DONE"
     print ""
@@ -625,39 +629,35 @@ def bscoreAnalysis(sample, tfName, fastaFile, bedFile, outFile):
     print "POS\tCOUNT"
     for idx, val in enumerate(count):
         print str(idx+1)+"\t"+str(val)
-def callMotif(sample, tfName, fastaFile, bedFile, outFile):
+def callMotif(name, motifFile, motifFormat, bedFile, fastaFile, outFile):
+
+    print "Name:",name
+    print "Motif:",motifFile
+    print "Format:",motifFormat
+    print "BED:",bedFile
+    print "FASTA:",fastaFile
+    print "OUTPUT:",outFile
 
     ##############################
     ### 1. PROCESS TF MOTIF
     ##############################
 
-    ### get JASPAR TF motif
-    m = get_jaspar_motif(tfName)
+    ### scale PSSM to non-negative integer matrix
+    pssm = motif2pssm(motifFile,motifFormat)
+    print "PSSM:"
+    print pssm
+    print ""
 
-    # stop if not found
-    if not m:
-        return None
+    scaled_pssm = pssm2scaled_pssm(pssm)
+    print "Scaled PSSM:"
+    print scaled_pssm
+    print ""
 
-    ppm = m.counts.normalize(pseudocounts=C_PSEUDOCOUNTS)
-    pwm = ppm.log_odds(background=C_BACKGROUND)
+    motif_len = pssm.shape[1]
+    print "Motif length:",motif_len
 
-    print "PFM:"
-    print m.counts
-    print "PPM:"
-    print ppm
-    print "PWM:"
-    print pwm
-
-    ### weblogo
-    getWeblogo(m)
-
-    ### scale PWM to non-negative integer
-    scaled_pwm = pwm2scaled_pwm(m, pwm)
-
-    print "Scaled PWM:"
-    print scaled_pwm
-
-    score_distribution = scaled_pwm2scoredist(m, scaled_pwm)
+    ### non-negative integer PSSM score distribution
+    score_distribution = scaled_pwm2scoredist(scaled_pssm)
 
     ### score threshold: discard motif with score smaller than this
     score_threshold = pval2score(C_PVAL_THRESHOLD, score_distribution)
@@ -698,12 +698,12 @@ def callMotif(sample, tfName, fastaFile, bedFile, outFile):
                     continue # handle out of bound seq range: Feature (chrM:16236-16616) beyond the length of chrM size (16571 bp).  Skipping.
                 # print seq
 
-                for subseq_start in range(seq_start,seq_end+1-len(m)):
+                for subseq_start in range(seq_start,seq_end+1-motif_len):
 
-                    ucsc_coord = seq_chr+":"+str(subseq_start+1)+"-"+str(subseq_start+len(m)) # 0-based to 1-based
+                    ucsc_coord = seq_chr+":"+str(subseq_start+1)+"-"+str(subseq_start+motif_len) # 0-based to 1-based
                     # print ucsc_coord
 
-                    subseq = seq[subseq_start-seq_start:subseq_start-seq_start+len(m)]
+                    subseq = seq[subseq_start-seq_start:subseq_start-seq_start+motif_len]
 
                     if "N" in subseq.upper():
                         continue
@@ -714,20 +714,21 @@ def callMotif(sample, tfName, fastaFile, bedFile, outFile):
                     ### call motif ###
 
                     ### FORWARD STRAND ###
-                    ref_score_pos = int(seq2score(subseq_ref_pos,scaled_pwm))
+                    ref_score_pos = int(seq2score(subseq_ref_pos,scaled_pssm))
                     if ref_score_pos > score_threshold:
                         ref_pval_pos = score2pval(ref_score_pos, score_distribution)
-                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+sample+"_"+tfName+"\t"+str(ref_pval_pos)+"\t+\t"+str(subseq_ref_pos).upper()+"\n")
+                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+motif_len)+"\t"+name+"\t"+str(ref_pval_pos)+"\t+\t"+str(subseq_ref_pos).upper()+"\n")
 
                     ### REVERSE STRAND ###
-                    ref_score_neg = int(seq2score(subseq_ref_neg,scaled_pwm))
+                    ref_score_neg = int(seq2score(subseq_ref_neg,scaled_pssm))
                     if ref_score_neg > score_threshold:
                         ref_pval_neg = score2pval(ref_score_neg, score_distribution)
-                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+sample+"_"+tfName+"\t"+str(ref_pval_neg)+"\t-\t"+str(subseq_ref_neg).upper()+"\n")
-def denovoAnalysis(name, pfmFile, bedFile, fastaFile, outFile):
+                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+motif_len)+"\t"+name+"\t"+str(ref_pval_neg)+"\t-\t"+str(subseq_ref_neg).upper()+"\n")
+def denovoAnalysis(name, motifFile, motifFormat, bedFile, fastaFile, outFile):
 
     print "Name:",name
-    print "PFM:",pfmFile
+    print "Motif:",motifFile
+    print "Format:",motifFormat
     print "BED:",bedFile
     print "FASTA:",fastaFile
     print "OUTPUT:",outFile
@@ -736,27 +737,22 @@ def denovoAnalysis(name, pfmFile, bedFile, fastaFile, outFile):
     ### 1. PROCESS TF MOTIF
     ##############################
 
-    ### get JASPAR TF motif
-    m = loadJasparMotif(pfmFile)
+    ### scale PSSM to non-negative integer matrix
+    pssm = motif2pssm(motifFile,motifFormat)
+    print "PSSM:"
+    print pssm
+    print ""
 
-    pfm = m.counts
-    ppm = m.counts.normalize(pseudocounts=C_PSEUDOCOUNTS)
-    pwm = ppm.log_odds(background=C_BACKGROUND)
+    scaled_pssm = pssm2scaled_pssm(pssm)
+    print "Scaled PSSM:"
+    print scaled_pssm
+    print ""
 
-    print "PFM:"
-    print pfm
-    print "PPM:"
-    print ppm
-    print "PWM:"
-    print pwm
+    motif_len = pssm.shape[1]
+    print "Motif length:",motif_len
 
-    ### scale PWM to non-negative integer
-    scaled_pwm = pwm2scaled_pwm(m, pwm)
-
-    print "Scaled PWM:"
-    print scaled_pwm
-
-    score_distribution = scaled_pwm2scoredist(m, scaled_pwm)
+    ### non-negative integer PSSM score distribution
+    score_distribution = scaled_pwm2scoredist(scaled_pssm)
 
     ### score threshold: discard motif with score smaller than this
     score_threshold = pval2score(C_PVAL_THRESHOLD, score_distribution)
@@ -810,24 +806,24 @@ def denovoAnalysis(name, pfmFile, bedFile, fastaFile, outFile):
                             seq_postfix = seq[var_pos+1-seq_start:]
                             # print seq_prefix,var_ref,">",var_alt,seq_postfix
 
-                            left = max(var_pos+1-len(m),var_pos-len(seq_prefix))
-                            right = min(var_pos+len(m),var_pos+1+len(seq_postfix))
+                            left = max(var_pos+1-motif_len,var_pos-len(seq_prefix))
+                            right = min(var_pos+motif_len,var_pos+1+len(seq_postfix))
                             # print left,right,right-left
 
-                            for subseq_start in range(left,right+1-len(m)):
+                            for subseq_start in range(left,right+1-motif_len):
 
-                                ucsc_coord = seq_chr+":"+str(subseq_start+1)+"-"+str(subseq_start+len(m)) # 0-based to 1-based
+                                ucsc_coord = seq_chr+":"+str(subseq_start+1)+"-"+str(subseq_start+motif_len) # 0-based to 1-based
                                 # print "Testing",ucsc_coord,var_ref,">",var_alt
 
                                 # var pos wrt to motif
                                 motif_varpos_pos = var_pos-subseq_start+1 # 1-based variant position wrt motif
-                                motif_varpos_neg = len(m)-var_pos+subseq_start # 1-based variant position wrt motif
+                                motif_varpos_neg = motif_len-var_pos+subseq_start # 1-based variant position wrt motif
                                 # print "var pos wrt TF motif (+):",motif_varpos_pos
                                 # print "var pos wrt TF motif (-):",motif_varpos_neg
 
                                 subseq_prefix = seq[subseq_start-seq_start:var_pos-seq_start]
                                 subseq_var = seq[var_pos-seq_start]
-                                subseq_postfix = seq[var_pos-seq_start+1:subseq_start-seq_start+len(m)]
+                                subseq_postfix = seq[var_pos-seq_start+1:subseq_start-seq_start+motif_len]
 
                                 if subseq_var.upper() != var_ref.upper():
                                     print "WARNING! Reference sequence mismatch: at the position",var_chr,":",var_pos+1,"reference sequence has the base",subseq_var,", but the variant has",var_ref,">",var_alt,"mutation. USCS coordinate:",ucsc_coord,subseq_prefix,subseq_var,subseq_postfix
@@ -857,35 +853,34 @@ def denovoAnalysis(name, pfmFile, bedFile, fastaFile, outFile):
 
                                 ### FORWARD STRAND ###
 
-                                ref_score_pos = int(seq2score(subseq_ref_pos,scaled_pwm))
-                                alt_score_pos = int(seq2score(subseq_alt_pos,scaled_pwm))
+                                ref_score_pos = int(seq2score(subseq_ref_pos,scaled_pssm))
+                                alt_score_pos = int(seq2score(subseq_alt_pos,scaled_pssm))
 
                                 if ref_score_pos > score_threshold or alt_score_pos > score_threshold:
                                     ref_pval_pos = score2pval(ref_score_pos, score_distribution)
                                     alt_pval_pos = score2pval(alt_score_pos, score_distribution)
 
                                     dscore_pos = -10 * math.log10(ref_pval_pos/alt_pval_pos)
-                                    ref_rawscore_pos = seq2score(subseq_ref_pos,pwm)
-                                    alt_rawscore_pos = seq2score(subseq_alt_pos,pwm)
+                                    ref_rawscore_pos = seq2score(subseq_ref_pos,pssm)
+                                    alt_rawscore_pos = seq2score(subseq_alt_pos,pssm)
                                     if abs(dscore_pos) > 0:
                                         # print dscore_pos
-                                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+name+"_"+var_chr+":"+str(var_pos+1)+"_"+var_ref+">"+var_alt+"\t"+str(dscore_pos)+"\t+\t"+str(ref_pval_pos)+"\t"+str(alt_pval_pos)+"\t"+str(subseq_ref_pos_print)+"\t"+str(subseq_alt_pos_print)+"\t"+str(ref_rawscore_pos)+"\t"+str(alt_rawscore_pos)+"\t"+str(motif_varpos_pos)+"\n")
+                                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+motif_len)+"\t"+name+"_"+var_chr+":"+str(var_pos+1)+"_"+var_ref+">"+var_alt+"\t"+str(dscore_pos)+"\t+\t"+str(ref_pval_pos)+"\t"+str(alt_pval_pos)+"\t"+str(subseq_ref_pos_print)+"\t"+str(subseq_alt_pos_print)+"\t"+str(ref_rawscore_pos)+"\t"+str(alt_rawscore_pos)+"\t"+str(motif_varpos_pos)+"\n")
 
                                 ### REVERSE STRAND ###
 
-                                ref_score_neg = int(seq2score(subseq_ref_neg,scaled_pwm))
-                                alt_score_neg = int(seq2score(subseq_alt_neg,scaled_pwm))
+                                ref_score_neg = int(seq2score(subseq_ref_neg,scaled_pssm))
+                                alt_score_neg = int(seq2score(subseq_alt_neg,scaled_pssm))
 
                                 if ref_score_neg > score_threshold or alt_score_neg > score_threshold:
                                     ref_pval_neg = score2pval(ref_score_neg, score_distribution)
                                     alt_pval_neg = score2pval(alt_score_neg, score_distribution)
 
                                     dscore_neg = -10 * math.log10(ref_pval_neg/alt_pval_neg)
-                                    ref_rawscore_neg = seq2score(subseq_ref_neg,pwm)
-                                    alt_rawscore_neg = seq2score(subseq_alt_neg,pwm)
+                                    ref_rawscore_neg = seq2score(subseq_ref_neg,pssm)
+                                    alt_rawscore_neg = seq2score(subseq_alt_neg,pssm)
                                     if abs(dscore_neg) > 0:
                                         # print dscore_neg
-                                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+len(m))+"\t"+name+"_"+var_chr+":"+str(var_pos+1)+"_"+var_ref+">"+var_alt+"\t"+str(dscore_neg)+"\t-\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\t"+str(subseq_ref_neg_print)+"\t"+str(subseq_alt_neg_print)+"\t"+str(ref_rawscore_neg)+"\t"+str(alt_rawscore_neg)+"\t"+str(motif_varpos_neg)+"\n")
-
+                                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+motif_len)+"\t"+name+"_"+var_chr+":"+str(var_pos+1)+"_"+var_ref+">"+var_alt+"\t"+str(dscore_neg)+"\t-\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\t"+str(subseq_ref_neg_print)+"\t"+str(subseq_alt_neg_print)+"\t"+str(ref_rawscore_neg)+"\t"+str(alt_rawscore_neg)+"\t"+str(motif_varpos_neg)+"\n")
                                 # break
                 # break

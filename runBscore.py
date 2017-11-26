@@ -16,51 +16,43 @@ import argparse, procMotif
 
 ### LOAD ARGs ###
 
-parser = argparse.ArgumentParser(description='Calculate TFBS B-score')
-parser.add_argument('-s','--sample', help='Sample Name',required=True)
-parser.add_argument('-t','--tf', help='TF Name',required=True)
-parser.add_argument('-b','--bed', help='Peak BED File',required=True)
-parser.add_argument('-v','--vcf', help='Variant VCF File',required=True)
-parser.add_argument('-r','--ref', help='REF Genome FASTA File',required=True)
+parser = argparse.ArgumentParser(description='Calculate TFBS/RBPBS B-score')
+
+parser.add_argument('-n', '--name', help='Name', required=True)
+parser.add_argument('-b', '--bed', help='BED File', required=True)
+
+parser.add_argument('-m', '--motif', help='Motif File', required=True)
+parser.add_argument('-f', '--format', help='Motif Format (default: jaspar) [Currently supported formats (case is ignored): AlignAce, MEME, MAST, TRANSFAC, pfm, jaspar, sites, ppm]', required=False, default="jaspar")
+
+parser.add_argument('-v', '--vcf', help='Variant VCF File', required=True)
+parser.add_argument('-r', '--ref', help='REF Genome FASTA File', required=True)
+
 args = parser.parse_args()
 
 ###
 
 def main():
 
-    sample = args.sample
-    tf = procMotif.parseTF(args.tf)
-
-    print "Sample:",sample
-    print "TF:",tf
-
-    m = procMotif.get_jaspar_motif(tf)
-
-    # stop if not found
-    if not m:
-        print "WARNING: JASPAR motif NOT found"
-        return None
-
-    print "JASPAR motif ID:",m.matrix_id
+    name = args.name
 
     # intersect peak with variants
     print "Intersect peak with variants"
-    procMotif.getPeakWithVariant(args.bed, args.vcf, "tf_peak_"+sample+"_"+tf+".bed")
+    procMotif.getPeakWithVariant(args.bed, args.vcf, "BEDVAR_"+name+".bed")
     print "DONE"
 
     # getfasta
     print "Get FASTA"
-    procMotif.getFasta(args.ref, "tf_peak_"+sample+"_"+tf+".bed", "tf_peak_"+sample+"_"+tf+".fa")
+    procMotif.getFasta(args.ref, "BEDVAR_"+name+".bed", "BEDVAR_"+name+".fa")
     print "DONE"
 
     # calculate B-score
     print "Calculate B-score"
-    procMotif.bscoreAnalysis(sample, tf, "tf_peak_"+sample+"_"+tf+".fa", "tf_peak_"+sample+"_"+tf+".bed", "bscore_"+sample+"_"+tf+".bed")
+    procMotif.bscoreAnalysis(name, args.motif, args.format, "BEDVAR_"+name+".bed", "BEDVAR_"+name+".fa", "B-SCORE_"+name+".bed")
     print "DONE"
 
     # sort & uniq
     print "sort & uniq"
-    procMotif.sortUniq("bscore_"+sample+"_"+tf+".bed","bscore_"+sample+"_"+tf+"_uniq.bed")
+    procMotif.sortUniq("B-SCORE_"+name+".bed","B-SCORE_"+name+"_uniq.bed")
     print "DONE"
 
 main()
