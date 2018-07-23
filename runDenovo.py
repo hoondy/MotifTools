@@ -42,7 +42,7 @@ def main():
 
     # calculate D-score
     print "Calculate D-score"
-    procMotif.denovoAnalysis(name, args.motif, args.format, args.bed, "BEDFA_"+name+".fa", "D-SCORE_"+name+".bed")
+    procMotif.denovoAnalysis(name, args.motif, args.format, "BEDFA_"+name+".fa", "D-SCORE_"+name+".bed")
     print "DONE"
 
     # sort & uniq

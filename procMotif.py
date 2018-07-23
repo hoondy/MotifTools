@@ -142,9 +142,6 @@ def meme2pfm(memeFile,outFile):
 
                 break
 
-
-    # for idx,line in enumerate(f.readlines()):
-
 ###
 
 def get_jaspar_motif(tfName):
@@ -473,7 +470,7 @@ def dscoreAnalysis(name, motifFile, motifFormat, bedFile, fastaFile, outFile):
                         if abs(dscore_neg) > 0:
                             # print dscore_neg
                             output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+motif_len)+"\t"+name+"_"+var_chr+":"+str(var_pos+1)+"_"+var_ref+">"+var_alt+"\t"+str(dscore_neg)+"\t-\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\t"+str(subseq_ref_neg_print)+"\t"+str(subseq_alt_neg_print)+"\t"+str(ref_rawscore_neg)+"\t"+str(alt_rawscore_neg)+"\t"+str(motif_varpos_neg)+"\n")
-                            
+
 def bscoreAnalysis(name, motifFile, motifFormat, bedFile, fastaFile, outFile):
 
     ##############################
@@ -727,6 +724,7 @@ def callMotif(name, motifFile, motifFormat, bedFile, fastaFile, outFile):
                     if ref_score_neg > score_threshold:
                         ref_pval_neg = score2pval(ref_score_neg, score_distribution)
                         output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+motif_len)+"\t"+name+"\t"+str(ref_pval_neg)+"\t-\t"+str(subseq_ref_neg).upper()+"\n")
+
 def denovoAnalysis(name, motifFile, motifFormat, fastaFile, outFile):
 
     print "Name:",name
@@ -872,5 +870,3 @@ def denovoAnalysis(name, motifFile, motifFormat, fastaFile, outFile):
                                 if abs(dscore_neg) > 0:
                                     # print dscore_neg
                                     output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+motif_len)+"\t"+name+"_"+var_chr+":"+str(var_pos+1)+"_"+var_ref+">"+var_alt+"\t"+str(dscore_neg)+"\t-\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\t"+str(subseq_ref_neg_print)+"\t"+str(subseq_alt_neg_print)+"\t"+str(ref_rawscore_neg)+"\t"+str(alt_rawscore_neg)+"\t"+str(motif_varpos_neg)+"\n")
-                            # break
-            # break
