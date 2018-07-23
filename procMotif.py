@@ -291,8 +291,9 @@ def seq2score(seq, pwm):
     score = 0.0
     seq2idx = {'A':0, 'C':1, 'G':2, 'T':3}
     for idx, nt in enumerate(seq):
-        # print seq,idx
-        score += pwm[seq2idx[nt.upper()], idx]
+        if nt.upper() in ['A','C','G','T']: ### some sequence contains IUPAC code other than ACGT
+            # print seq,idx
+            score += pwm[seq2idx[nt.upper()], idx]
     return score
 def score2pval(scaled_score, score_distribution):
     return float(sum(score_distribution[-1,scaled_score:])) / float(math.pow(4,len(score_distribution)))
@@ -472,6 +473,7 @@ def dscoreAnalysis(name, motifFile, motifFormat, bedFile, fastaFile, outFile):
                         if abs(dscore_neg) > 0:
                             # print dscore_neg
                             output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+motif_len)+"\t"+name+"_"+var_chr+":"+str(var_pos+1)+"_"+var_ref+">"+var_alt+"\t"+str(dscore_neg)+"\t-\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\t"+str(subseq_ref_neg_print)+"\t"+str(subseq_alt_neg_print)+"\t"+str(ref_rawscore_neg)+"\t"+str(alt_rawscore_neg)+"\t"+str(motif_varpos_neg)+"\n")
+                            
 def bscoreAnalysis(name, motifFile, motifFormat, bedFile, fastaFile, outFile):
 
     ##############################
@@ -629,6 +631,7 @@ def bscoreAnalysis(name, motifFile, motifFormat, bedFile, fastaFile, outFile):
     print "POS\tCOUNT"
     for idx, val in enumerate(count):
         print str(idx+1)+"\t"+str(val)
+
 def callMotif(name, motifFile, motifFormat, bedFile, fastaFile, outFile):
 
     print "Name:",name
@@ -724,12 +727,11 @@ def callMotif(name, motifFile, motifFormat, bedFile, fastaFile, outFile):
                     if ref_score_neg > score_threshold:
                         ref_pval_neg = score2pval(ref_score_neg, score_distribution)
                         output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+motif_len)+"\t"+name+"\t"+str(ref_pval_neg)+"\t-\t"+str(subseq_ref_neg).upper()+"\n")
-def denovoAnalysis(name, motifFile, motifFormat, bedFile, fastaFile, outFile):
+def denovoAnalysis(name, motifFile, motifFormat, fastaFile, outFile):
 
     print "Name:",name
     print "Motif:",motifFile
     print "Format:",motifFormat
-    print "BED:",bedFile
     print "FASTA:",fastaFile
     print "OUTPUT:",outFile
 
@@ -770,117 +772,105 @@ def denovoAnalysis(name, motifFile, motifFormat, bedFile, fastaFile, outFile):
 
     print "Processing",len(peak_seq),"peaks from REF genome"
 
-    ##############################
-    ### 3. PROCESS BED
-    ##############################
-
     with open(outFile, 'w') as output:
-        with open(bedFile, 'r') as input:
-            for line in input.readlines():
-                line_split = line.rstrip().split("\t")
-                # print "line_split=",line_split
+        for skey in peak_seq.keys():
+            # print "skey=",skey
 
-                # sequence info
-                seq_chr = line_split[0]
-                seq_start = int(line_split[1])
-                seq_end = int(line_split[2])
-                skey = seq_chr+":"+str(seq_start)+"-"+str(seq_end) # 0-based
-                # print "skey=",skey
-                if skey in peak_seq:
-                    seq = peak_seq[skey]
-                else:
-                    continue # handle out of bound seq range: Feature (chrM:16236-16616) beyond the length of chrM size (16571 bp).  Skipping.
-                # print "seq=",seq
+            # sequence info
+            seq_chr = skey.split(":")[0]
+            seq_start = int(skey.split(":")[1].split("-")[0])
+            seq_end = int(skey.split(":")[1].split("-")[1])
+            seq = peak_seq[skey]
 
-                # denovo variants
-                var_chr = seq_chr
-                for var_pos in range(seq_start,seq_end): # 0-based pos
-                    var_ref = seq[var_pos-seq_start]
-                    for i, nt in enumerate(['A','C','G','T']):
-                        if nt!=var_ref:
-                            var_alt=nt
+            # denovo variants
+            var_chr = seq_chr
+            for var_pos in range(seq_start,seq_end): # 0-based pos
+                var_ref = seq[var_pos-seq_start]
+                for i, nt in enumerate(['A','C','G','T']):
+                    if nt!=var_ref:
+                        var_alt=nt
 
-                            # seq before variant
-                            seq_prefix = seq[:var_pos-seq_start]
-                            # seq after variant
-                            seq_postfix = seq[var_pos+1-seq_start:]
-                            # print seq_prefix,var_ref,">",var_alt,seq_postfix
+                        # seq before variant
+                        seq_prefix = seq[:var_pos-seq_start]
+                        # seq after variant
+                        seq_postfix = seq[var_pos+1-seq_start:]
+                        # print seq_prefix,var_ref,">",var_alt,seq_postfix
 
-                            left = max(var_pos+1-motif_len,var_pos-len(seq_prefix))
-                            right = min(var_pos+motif_len,var_pos+1+len(seq_postfix))
-                            # print left,right,right-left
+                        left = max(var_pos+1-motif_len,var_pos-len(seq_prefix))
+                        right = min(var_pos+motif_len,var_pos+1+len(seq_postfix))
+                        # print left,right,right-left
 
-                            for subseq_start in range(left,right+1-motif_len):
+                        for subseq_start in range(left,right+1-motif_len):
 
-                                ucsc_coord = seq_chr+":"+str(subseq_start+1)+"-"+str(subseq_start+motif_len) # 0-based to 1-based
-                                # print "Testing",ucsc_coord,var_ref,">",var_alt
+                            ucsc_coord = seq_chr+":"+str(subseq_start+1)+"-"+str(subseq_start+motif_len) # 0-based to 1-based
+                            # print "Testing",ucsc_coord,var_ref,">",var_alt
 
-                                # var pos wrt to motif
-                                motif_varpos_pos = var_pos-subseq_start+1 # 1-based variant position wrt motif
-                                motif_varpos_neg = motif_len-var_pos+subseq_start # 1-based variant position wrt motif
-                                # print "var pos wrt TF motif (+):",motif_varpos_pos
-                                # print "var pos wrt TF motif (-):",motif_varpos_neg
+                            # var pos wrt to motif
+                            motif_varpos_pos = var_pos-subseq_start+1 # 1-based variant position wrt motif
+                            motif_varpos_neg = motif_len-var_pos+subseq_start # 1-based variant position wrt motif
+                            # print "var pos wrt TF motif (+):",motif_varpos_pos
+                            # print "var pos wrt TF motif (-):",motif_varpos_neg
 
-                                subseq_prefix = seq[subseq_start-seq_start:var_pos-seq_start]
-                                subseq_var = seq[var_pos-seq_start]
-                                subseq_postfix = seq[var_pos-seq_start+1:subseq_start-seq_start+motif_len]
+                            subseq_prefix = seq[subseq_start-seq_start:var_pos-seq_start]
+                            subseq_var = seq[var_pos-seq_start]
+                            subseq_postfix = seq[var_pos-seq_start+1:subseq_start-seq_start+motif_len]
 
-                                if subseq_var.upper() != var_ref.upper():
-                                    print "WARNING! Reference sequence mismatch: at the position",var_chr,":",var_pos+1,"reference sequence has the base",subseq_var,", but the variant has",var_ref,">",var_alt,"mutation. USCS coordinate:",ucsc_coord,subseq_prefix,subseq_var,subseq_postfix
+                            if subseq_var.upper() != var_ref.upper():
+                                print "WARNING! Reference sequence mismatch: at the position",var_chr,":",var_pos+1,"reference sequence has the base",subseq_var,", but the variant has",var_ref,">",var_alt,"mutation. USCS coordinate:",ucsc_coord,subseq_prefix,subseq_var,subseq_postfix
 
-                                subseq_ref_pos = subseq_prefix+var_ref.upper()+subseq_postfix
-                                subseq_alt_pos = subseq_prefix+var_alt.upper()+subseq_postfix
+                            subseq_ref_pos = subseq_prefix+var_ref.upper()+subseq_postfix
+                            subseq_alt_pos = subseq_prefix+var_alt.upper()+subseq_postfix
 
-                                if "N" in subseq_ref_pos.upper():
-                                    continue
+                            if "N" in subseq_ref_pos.upper():
+                                continue
 
-                                subseq_ref_pos_print = subseq_prefix+"["+var_ref.upper()+"]"+subseq_postfix
-                                subseq_alt_pos_print = subseq_prefix+"["+var_alt.upper()+"]"+subseq_postfix
+                            subseq_ref_pos_print = subseq_prefix+"["+var_ref.upper()+"]"+subseq_postfix
+                            subseq_alt_pos_print = subseq_prefix+"["+var_alt.upper()+"]"+subseq_postfix
 
-                                # print subseq_ref_pos, subseq_alt_pos
-                                # print "(+)",subseq_ref_pos_print, subseq_alt_pos_print
+                            # print subseq_ref_pos, subseq_alt_pos
+                            # print "(+)",subseq_ref_pos_print, subseq_alt_pos_print
 
-                                subseq_ref_neg = subseq_ref_pos.reverse_complement()
-                                subseq_alt_neg = subseq_alt_pos.reverse_complement()
+                            subseq_ref_neg = subseq_ref_pos.reverse_complement()
+                            subseq_alt_neg = subseq_alt_pos.reverse_complement()
 
-                                subseq_ref_neg_print = subseq_postfix.reverse_complement()+"["+Seq(var_ref.upper(),IUPAC.unambiguous_dna).reverse_complement()+"]"+subseq_prefix.reverse_complement()
-                                subseq_alt_neg_print = subseq_postfix.reverse_complement()+"["+Seq(var_alt.upper(),IUPAC.unambiguous_dna).reverse_complement()+"]"+subseq_prefix.reverse_complement()
+                            subseq_ref_neg_print = subseq_postfix.reverse_complement()+"["+Seq(var_ref.upper(),IUPAC.unambiguous_dna).reverse_complement()+"]"+subseq_prefix.reverse_complement()
+                            subseq_alt_neg_print = subseq_postfix.reverse_complement()+"["+Seq(var_alt.upper(),IUPAC.unambiguous_dna).reverse_complement()+"]"+subseq_prefix.reverse_complement()
 
-                                # print subseq_ref_neg, subseq_alt_neg
-                                # print "(-)",subseq_ref_neg_print, subseq_alt_neg_print
+                            # print subseq_ref_neg, subseq_alt_neg
+                            # print "(-)",subseq_ref_neg_print, subseq_alt_neg_print
 
-                                ### calc motif score ###
+                            ### calc motif score ###
 
-                                ### FORWARD STRAND ###
+                            ### FORWARD STRAND ###
 
-                                ref_score_pos = int(seq2score(subseq_ref_pos,scaled_pssm))
-                                alt_score_pos = int(seq2score(subseq_alt_pos,scaled_pssm))
+                            ref_score_pos = int(seq2score(subseq_ref_pos,scaled_pssm))
+                            alt_score_pos = int(seq2score(subseq_alt_pos,scaled_pssm))
 
-                                if ref_score_pos > score_threshold or alt_score_pos > score_threshold:
-                                    ref_pval_pos = score2pval(ref_score_pos, score_distribution)
-                                    alt_pval_pos = score2pval(alt_score_pos, score_distribution)
+                            if ref_score_pos > score_threshold or alt_score_pos > score_threshold:
+                                ref_pval_pos = score2pval(ref_score_pos, score_distribution)
+                                alt_pval_pos = score2pval(alt_score_pos, score_distribution)
 
-                                    dscore_pos = -10 * math.log10(ref_pval_pos/alt_pval_pos)
-                                    ref_rawscore_pos = seq2score(subseq_ref_pos,pssm)
-                                    alt_rawscore_pos = seq2score(subseq_alt_pos,pssm)
-                                    if abs(dscore_pos) > 0:
-                                        # print dscore_pos
-                                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+motif_len)+"\t"+name+"_"+var_chr+":"+str(var_pos+1)+"_"+var_ref+">"+var_alt+"\t"+str(dscore_pos)+"\t+\t"+str(ref_pval_pos)+"\t"+str(alt_pval_pos)+"\t"+str(subseq_ref_pos_print)+"\t"+str(subseq_alt_pos_print)+"\t"+str(ref_rawscore_pos)+"\t"+str(alt_rawscore_pos)+"\t"+str(motif_varpos_pos)+"\n")
+                                dscore_pos = -10 * math.log10(ref_pval_pos/alt_pval_pos)
+                                ref_rawscore_pos = seq2score(subseq_ref_pos,pssm)
+                                alt_rawscore_pos = seq2score(subseq_alt_pos,pssm)
+                                if abs(dscore_pos) > 0:
+                                    # print dscore_pos
+                                    output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+motif_len)+"\t"+name+"_"+var_chr+":"+str(var_pos+1)+"_"+var_ref+">"+var_alt+"\t"+str(dscore_pos)+"\t+\t"+str(ref_pval_pos)+"\t"+str(alt_pval_pos)+"\t"+str(subseq_ref_pos_print)+"\t"+str(subseq_alt_pos_print)+"\t"+str(ref_rawscore_pos)+"\t"+str(alt_rawscore_pos)+"\t"+str(motif_varpos_pos)+"\n")
 
-                                ### REVERSE STRAND ###
+                            ### REVERSE STRAND ###
 
-                                ref_score_neg = int(seq2score(subseq_ref_neg,scaled_pssm))
-                                alt_score_neg = int(seq2score(subseq_alt_neg,scaled_pssm))
+                            ref_score_neg = int(seq2score(subseq_ref_neg,scaled_pssm))
+                            alt_score_neg = int(seq2score(subseq_alt_neg,scaled_pssm))
 
-                                if ref_score_neg > score_threshold or alt_score_neg > score_threshold:
-                                    ref_pval_neg = score2pval(ref_score_neg, score_distribution)
-                                    alt_pval_neg = score2pval(alt_score_neg, score_distribution)
+                            if ref_score_neg > score_threshold or alt_score_neg > score_threshold:
+                                ref_pval_neg = score2pval(ref_score_neg, score_distribution)
+                                alt_pval_neg = score2pval(alt_score_neg, score_distribution)
 
-                                    dscore_neg = -10 * math.log10(ref_pval_neg/alt_pval_neg)
-                                    ref_rawscore_neg = seq2score(subseq_ref_neg,pssm)
-                                    alt_rawscore_neg = seq2score(subseq_alt_neg,pssm)
-                                    if abs(dscore_neg) > 0:
-                                        # print dscore_neg
-                                        output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+motif_len)+"\t"+name+"_"+var_chr+":"+str(var_pos+1)+"_"+var_ref+">"+var_alt+"\t"+str(dscore_neg)+"\t-\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\t"+str(subseq_ref_neg_print)+"\t"+str(subseq_alt_neg_print)+"\t"+str(ref_rawscore_neg)+"\t"+str(alt_rawscore_neg)+"\t"+str(motif_varpos_neg)+"\n")
-                                # break
-                # break
+                                dscore_neg = -10 * math.log10(ref_pval_neg/alt_pval_neg)
+                                ref_rawscore_neg = seq2score(subseq_ref_neg,pssm)
+                                alt_rawscore_neg = seq2score(subseq_alt_neg,pssm)
+                                if abs(dscore_neg) > 0:
+                                    # print dscore_neg
+                                    output.write(seq_chr+"\t"+str(subseq_start)+"\t"+str(subseq_start+motif_len)+"\t"+name+"_"+var_chr+":"+str(var_pos+1)+"_"+var_ref+">"+var_alt+"\t"+str(dscore_neg)+"\t-\t"+str(ref_pval_neg)+"\t"+str(alt_pval_neg)+"\t"+str(subseq_ref_neg_print)+"\t"+str(subseq_alt_neg_print)+"\t"+str(ref_rawscore_neg)+"\t"+str(alt_rawscore_neg)+"\t"+str(motif_varpos_neg)+"\n")
+                            # break
+            # break
