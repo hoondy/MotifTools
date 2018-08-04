@@ -302,6 +302,10 @@ def pval2score(pval, score_distribution):
             # print float(cumsum) / float(math.pow(4,len(score_distribution)))
             return idx
 
+def makeWeblogo(path2motif,format):
+    with open(path2motif) as handle:
+        getWeblogo(motifs.read(handle, format))
+
 def getWeblogo(m):
 
     tfName = str(m.name).upper()

@@ -33,6 +33,9 @@ C_PVAL_THRESHOLD = float(Config.get("param","C_PVAL_THRESHOLD"))
 parser = argparse.ArgumentParser(description='Run Utilities')
 
 parser.add_argument('-o','--option', help='Option',required=True)
+parser.add_argument('-m', '--motif', help='Motif File', required=True)
+parser.add_argument('-f', '--format', help='Motif Format (default: jaspar) [Currently supported formats (case is ignored): AlignAce, MEME, MAST, TRANSFAC, pfm, jaspar, sites, ppm]', required=False, default="jaspar")
+
 
 args = parser.parse_args()
 
@@ -40,3 +43,6 @@ args = parser.parse_args()
 
 if args.option == "makePFM":
     procMotif.jaspar2pfm(Config.get("data","pfm_db_jaspar"),Config.get("data","pfm_path"))
+
+elif args.option == "logo":
+    procMotif.makeWeblogo(args.motif, args.format)
