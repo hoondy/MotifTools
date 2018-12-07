@@ -142,6 +142,60 @@ def meme2pfm(memeFile,outFile):
 
                 break
 
+def meme2pfm_all(memeFile):
+
+    with open(memeFile, 'r') as f:
+        version=0
+        id = ""
+        name = ""
+        w = -1
+        nsite = 0
+        motif = ""
+
+        for idx,line in enumerate(f.readlines()):
+
+            if line.startswith("MOTIF"):
+
+                ### reset
+                version+=1 # version ++
+                motif = ""
+                ###
+
+                name = line.split(" ")[1].rstrip()
+                id = line.split(" ")[2].rstrip()
+                print name, id
+
+            if line.startswith("letter-probability matrix"):
+
+                prefix = memeFile.split(".")[0].rstrip()+"_v"+str(version) # filename prefix
+                w = int(line.split(" ")[5])
+                nsite = int(line.split(" ")[7])
+                print w, nsite
+
+            elif w>0:
+                motif=motif+line.rstrip()+"\n"
+                w -= 1
+
+            elif w==0:
+                m=np.fromstring(motif,sep=" ")
+                m=np.reshape(m,(-1,4))
+                m=nsite*m
+                m=np.rint(m)
+                m=m.transpose()
+                print m
+                np.savetxt(prefix+".pfm",m,fmt='%i')
+
+                lines = []
+                lines.append(">"+id+" "+name)
+                seq = ["A","C","G","T"]
+                with open(prefix+".pfm", 'r') as g:
+                    for idx,line in enumerate(g.readlines()):
+                        lines.append(seq[idx]+" ["+line.rstrip()+"]")
+                with open(prefix+".pfm", 'w') as h:
+                    for line in lines:
+                        h.write(line+"\n")
+                w -= 1
+
 ###
 
 def get_jaspar_motif(tfName):

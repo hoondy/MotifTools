@@ -46,3 +46,6 @@ if args.option == "makePFM":
 
 elif args.option == "logo":
     procMotif.makeWeblogo(args.motif, args.format)
+
+elif args.option == "meme2pfm":
+    procMotif.meme2pfm_all(args.motif)
