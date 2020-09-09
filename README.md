@@ -3,7 +3,7 @@ A collection of python tools to evaluate a variant on TF motif
 * D-score: motif-breaking or motif-gaining power
 * B-score: burden score
 
-![MotifTools](https://docs.google.com/a/yale.edu/uc?authuser=1&id=0B1hrcjjDSLuXamFwakx1SHpuc28&export=download)
+![MotifTools](MotifTools.png)
 
 ## Dependencies
 
